@@ -1,1 +1,24 @@
+# Local machine config
 .claude/settings.local.json
+local.properties
+
+# Build outputs
+.gradle/
+build/
+app/build/
+
+# IDE
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/*.iml
+*.iml
+
+# Keystore
+*.jks
+*.keystore
