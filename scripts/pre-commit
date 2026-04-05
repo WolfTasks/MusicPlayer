@@ -5,6 +5,19 @@ set -euo pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
+# Auto-detect JAVA_HOME from common Android Studio JDK locations
+if [ -z "${JAVA_HOME:-}" ]; then
+    for candidate in \
+        "$HOME/.jdks"/jbr-* \
+        "/c/Program Files/Android/Android Studio/jbr" \
+        "/Applications/Android Studio.app/Contents/jbr/Contents/Home"; do
+        if [ -x "$candidate/bin/java" ]; then
+            export JAVA_HOME="$candidate"
+            break
+        fi
+    done
+fi
+
 # Only run if Kotlin files are staged
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.kt$' || true)
 if [ -z "$STAGED" ]; then

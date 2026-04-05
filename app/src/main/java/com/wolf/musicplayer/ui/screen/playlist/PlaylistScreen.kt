@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,9 +71,8 @@ fun PlaylistScreen(
                 Icon(Icons.Default.Add, contentDescription = "Neue Playlist")
             }
         },
-        contentPadding = contentPadding,
     ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(contentPadding)) {
             items(playlists, key = { it.id }) { playlist ->
                 ListItem(
                     headlineContent = { Text(playlist.name) },

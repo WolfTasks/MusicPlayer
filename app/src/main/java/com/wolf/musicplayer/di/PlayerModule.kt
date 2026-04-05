@@ -6,14 +6,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.scopes.ServiceScoped
-import dagger.hilt.components.ServiceComponent
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
-@InstallIn(ServiceComponent::class)
+@InstallIn(SingletonComponent::class)
 object PlayerModule {
     @Provides
-    @ServiceScoped
+    @Singleton
     fun provideExoPlayer(
         @ApplicationContext context: Context,
     ): ExoPlayer = ExoPlayer.Builder(context).build()

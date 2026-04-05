@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,9 +29,8 @@ fun AlbumScreen(
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Alben") }) },
-        contentPadding = contentPadding,
     ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(contentPadding)) {
             items(albums, key = { it }) { album ->
                 ListItem(
                     headlineContent = { Text(album) },
