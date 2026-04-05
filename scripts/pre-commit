@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# To bypass this hook in an emergency: git commit --no-verify
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
 # Only run if Kotlin files are staged
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.kt$' || true)
 if [ -z "$STAGED" ]; then
@@ -9,7 +13,7 @@ fi
 
 echo ""
 echo "=== [1/3] ktlint ==="
-if ! ./gradlew ktlintCheck --quiet 2>&1; then
+if ! ./gradlew ktlintCheck; then
     echo "✗ ktlint fehlgeschlagen — Commit blockiert"
     exit 1
 fi
@@ -17,7 +21,7 @@ echo "✓ ktlint OK"
 
 echo ""
 echo "=== [2/3] Unit Tests ==="
-if ! ./gradlew test --quiet 2>&1; then
+if ! ./gradlew test; then
     echo "✗ Unit Tests fehlgeschlagen — Commit blockiert"
     exit 1
 fi
@@ -26,13 +30,19 @@ echo "✓ Tests OK"
 echo ""
 echo "=== [3/3] KI Code-Review ==="
 DIFF=$(git diff --cached -- '*.kt')
-RESULT=$(echo "$DIFF" | claude -p scripts/review-agent-prompt.md)
+if ! RESULT=$(echo "$DIFF" | claude -p scripts/review-agent-prompt.md 2>&1); then
+    echo "✗ KI-Review: Claude-Aufruf fehlgeschlagen — Commit blockiert"
+    exit 1
+fi
 
 echo "$RESULT"
 
 if echo "$RESULT" | grep -q "^EXIT:1"; then
     echo ""
     echo "✗ KI-Review: FEHLER gefunden — Commit blockiert"
+    exit 1
+elif ! echo "$RESULT" | grep -q "^EXIT:0"; then
+    echo "✗ KI-Review: Ungültige Ausgabe (kein EXIT-Status) — Commit blockiert"
     exit 1
 fi
 
