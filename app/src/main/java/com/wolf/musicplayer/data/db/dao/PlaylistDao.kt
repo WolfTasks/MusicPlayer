@@ -1,6 +1,11 @@
 package com.wolf.musicplayer.data.db.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.wolf.musicplayer.data.db.entity.PlaylistEntity
 import com.wolf.musicplayer.data.db.entity.PlaylistSongEntity
 import com.wolf.musicplayer.data.db.entity.SongEntity
@@ -27,13 +32,18 @@ interface PlaylistDao {
     suspend fun insertSong(entry: PlaylistSongEntity)
 
     @Query("DELETE FROM playlist_songs WHERE playlistId = :playlistId AND songId = :songId")
-    suspend fun removeSong(playlistId: Long, songId: Long)
+    suspend fun removeSong(
+        playlistId: Long,
+        songId: Long,
+    )
 
-    @Query("""
+    @Query(
+        """
         SELECT s.* FROM songs s
         INNER JOIN playlist_songs ps ON ps.songId = s.id
         WHERE ps.playlistId = :playlistId
         ORDER BY ps.position ASC
-    """)
+    """,
+    )
     fun observeSongsForPlaylist(playlistId: Long): Flow<List<SongEntity>>
 }

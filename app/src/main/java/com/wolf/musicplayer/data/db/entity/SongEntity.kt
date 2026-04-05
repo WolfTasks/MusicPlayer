@@ -10,7 +10,8 @@ data class SongEntity(
     val artist: String,
     val album: String,
     val duration: Long,
-    val sourceType: String,      // "LOCAL" or "SERVER"
+    // "LOCAL" or "SERVER"
+    val sourceType: String,
     val serverId: Long? = null,
     val serverSongId: String? = null,
     val localPath: String? = null,

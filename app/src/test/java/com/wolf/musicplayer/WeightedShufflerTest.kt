@@ -1,11 +1,12 @@
 package com.wolf.musicplayer
 
 import com.wolf.musicplayer.domain.WeightedShuffler
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WeightedShufflerTest {
-
     private val shuffler = WeightedShuffler()
 
     @Test
@@ -36,8 +37,10 @@ class WeightedShufflerTest {
         val rareCount = picks.count { it == "rare" }
         val commonCount = picks.count { it == "common" }
         // common should be picked ~10x more often
-        assertTrue("common picked at least 5x more than rare",
-            commonCount > rareCount * 4)
+        assertTrue(
+            "common picked at least 5x more than rare",
+            commonCount > rareCount * 4,
+        )
     }
 
     @Test

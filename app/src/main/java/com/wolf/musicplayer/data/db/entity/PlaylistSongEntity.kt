@@ -19,7 +19,7 @@ import androidx.room.ForeignKey
             childColumns = ["songId"],
             onDelete = ForeignKey.CASCADE,
         ),
-    ]
+    ],
 )
 data class PlaylistSongEntity(
     val playlistId: Long,

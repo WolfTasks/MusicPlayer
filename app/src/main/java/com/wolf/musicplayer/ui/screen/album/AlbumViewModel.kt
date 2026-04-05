@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class AlbumViewModel @Inject constructor(repo: SongRepository) : ViewModel() {
-    val albums = repo.observeAlbums()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-}
+class AlbumViewModel
+    @Inject
+    constructor(repo: SongRepository) : ViewModel() {
+        val albums =
+            repo.observeAlbums()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }

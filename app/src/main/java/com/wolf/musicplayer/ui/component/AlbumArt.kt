@@ -28,15 +28,17 @@ fun AlbumArt(
         model = artUrl,
         contentDescription = "Album art",
         contentScale = ContentScale.Crop,
-        modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(cornerRadius)),
+        modifier =
+            modifier
+                .size(size)
+                .clip(RoundedCornerShape(cornerRadius)),
         error = {
             Box(
-                modifier = Modifier
-                    .size(size)
-                    .clip(RoundedCornerShape(cornerRadius))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier =
+                    Modifier
+                        .size(size)
+                        .clip(RoundedCornerShape(cornerRadius))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

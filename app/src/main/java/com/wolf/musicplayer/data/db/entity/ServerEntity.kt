@@ -10,6 +10,7 @@ data class ServerEntity(
     val url: String,
     val username: String,
     val passwordEncrypted: String,
-    val type: String,            // "SUBSONIC" or "JELLYFIN"
+    // "SUBSONIC" or "JELLYFIN"
+    val type: String,
     val isActive: Boolean = true,
 )

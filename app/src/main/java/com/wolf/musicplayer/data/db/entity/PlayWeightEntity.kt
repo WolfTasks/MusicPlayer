@@ -6,12 +6,14 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "play_weights",
-    foreignKeys = [ForeignKey(
-        entity = SongEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["songId"],
-        onDelete = ForeignKey.CASCADE,
-    )]
+    foreignKeys = [
+        ForeignKey(
+            entity = SongEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["songId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
 )
 data class PlayWeightEntity(
     @PrimaryKey val songId: Long,

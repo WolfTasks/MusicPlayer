@@ -1,10 +1,30 @@
 package com.wolf.musicplayer.ui.screen.player
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -22,10 +42,11 @@ fun PlayerScreen(
     val song = state.currentSong
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(horizontal = 32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -101,24 +122,29 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = "Shuffle",
-                    tint = if (state.shuffleEnabled)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint =
+                        if (state.shuffleEnabled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
             IconButton(onClick = { viewModel.cycleRepeatMode() }) {
                 Icon(
-                    imageVector = when (state.repeatMode) {
-                        Player.REPEAT_MODE_ONE -> Icons.Default.RepeatOne
-                        Player.REPEAT_MODE_ALL -> Icons.Default.Repeat
-                        else -> Icons.Default.Repeat
-                    },
+                    imageVector =
+                        when (state.repeatMode) {
+                            Player.REPEAT_MODE_ONE -> Icons.Default.RepeatOne
+                            Player.REPEAT_MODE_ALL -> Icons.Default.Repeat
+                            else -> Icons.Default.Repeat
+                        },
                     contentDescription = "Repeat",
-                    tint = if (state.repeatMode != Player.REPEAT_MODE_OFF)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint =
+                        if (state.repeatMode != Player.REPEAT_MODE_OFF) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
         }

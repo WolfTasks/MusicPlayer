@@ -19,33 +19,41 @@ data class LibraryState(
     val isLoading: Boolean = false,
 ) {
     val filtered: List<Song>
-        get() = if (query.isBlank()) songs
-        else songs.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                it.artist.contains(query, ignoreCase = true) ||
-                it.album.contains(query, ignoreCase = true)
-        }
+        get() =
+            if (query.isBlank()) {
+                songs
+            } else {
+                songs.filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                        it.artist.contains(query, ignoreCase = true) ||
+                        it.album.contains(query, ignoreCase = true)
+                }
+            }
 }
 
 @HiltViewModel
-class LibraryViewModel @Inject constructor(
-    private val songRepository: SongRepository,
-) : ViewModel() {
+class LibraryViewModel
+    @Inject
+    constructor(
+        private val songRepository: SongRepository,
+    ) : ViewModel() {
+        private val _query = MutableStateFlow("")
+        private val _isLoading = MutableStateFlow(false)
 
-    private val _query = MutableStateFlow("")
-    private val _isLoading = MutableStateFlow(false)
+        val state =
+            combine(songRepository.observeAll(), _query, _isLoading) { songs, query, loading ->
+                LibraryState(songs = songs, query = query, isLoading = loading)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryState())
 
-    val state = combine(songRepository.observeAll(), _query, _isLoading) { songs, query, loading ->
-        LibraryState(songs = songs, query = query, isLoading = loading)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryState())
+        fun setQuery(query: String) {
+            _query.update { query }
+        }
 
-    fun setQuery(query: String) { _query.update { query } }
-
-    fun syncLocalMusic() {
-        viewModelScope.launch {
-            _isLoading.update { true }
-            songRepository.syncLocalMusic()
-            _isLoading.update { false }
+        fun syncLocalMusic() {
+            viewModelScope.launch {
+                _isLoading.update { true }
+                songRepository.syncLocalMusic()
+                _isLoading.update { false }
+            }
         }
     }
-}

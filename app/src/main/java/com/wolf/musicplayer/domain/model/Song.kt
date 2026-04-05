@@ -7,7 +7,8 @@ data class Song(
     val title: String,
     val artist: String,
     val album: String,
-    val duration: Long,        // milliseconds
+    // milliseconds
+    val duration: Long,
     val sourceType: SourceType,
     val serverId: Long?,
     val serverSongId: String?,

@@ -11,18 +11,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class PlaylistViewModel @Inject constructor(
-    private val repo: PlaylistRepository,
-) : ViewModel() {
+class PlaylistViewModel
+    @Inject
+    constructor(
+        private val repo: PlaylistRepository,
+    ) : ViewModel() {
+        val playlists =
+            repo.observeAll()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val playlists = repo.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        fun createPlaylist(name: String) {
+            viewModelScope.launch { repo.create(name) }
+        }
 
-    fun createPlaylist(name: String) {
-        viewModelScope.launch { repo.create(name) }
+        fun deletePlaylist(playlist: Playlist) {
+            viewModelScope.launch { repo.delete(playlist.id) }
+        }
     }
-
-    fun deletePlaylist(playlist: Playlist) {
-        viewModelScope.launch { repo.delete(playlist.id) }
-    }
-}

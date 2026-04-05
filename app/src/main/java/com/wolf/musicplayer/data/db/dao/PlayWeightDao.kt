@@ -1,6 +1,9 @@
 package com.wolf.musicplayer.data.db.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.wolf.musicplayer.data.db.entity.PlayWeightEntity
 import kotlinx.coroutines.flow.Flow
 
