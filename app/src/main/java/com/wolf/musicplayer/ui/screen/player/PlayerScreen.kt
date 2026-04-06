@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -164,7 +164,7 @@ fun PlayerScreen(
                 enabled = song != null,
             ) {
                 Icon(
-                    imageVector = Icons.Default.PlaylistAdd,
+                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = "Zu Playlist hinzufügen",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
