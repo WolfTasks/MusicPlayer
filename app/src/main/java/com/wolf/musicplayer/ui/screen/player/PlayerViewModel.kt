@@ -16,10 +16,13 @@ import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.service.MusicService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -49,6 +52,7 @@ class PlayerViewModel
         private var currentQueue: List<Song> = emptyList()
         private var currentSongId: Long? = null
         private var playbackStartPosition: Long = 0L
+        private var positionTracker: Job? = null
 
         init {
             connectToService()
@@ -68,6 +72,7 @@ class PlayerViewModel
             object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     _state.update { it.copy(isPlaying = isPlaying) }
+                    if (isPlaying) startPositionTracking() else stopPositionTracking()
                 }
 
                 override fun onMediaItemTransition(
@@ -85,6 +90,7 @@ class PlayerViewModel
 
                 override fun onPlaybackStateChanged(state: Int) {
                     if (state == Player.STATE_ENDED) {
+                        stopPositionTracking()
                         currentSongId?.let { id ->
                             val ctrl = controller ?: return
                             val pct =
@@ -100,6 +106,24 @@ class PlayerViewModel
                     }
                 }
             }
+
+        // Must be called on the main thread — positionTracker is not thread-safe.
+        private fun startPositionTracking() {
+            positionTracker?.cancel()
+            positionTracker =
+                viewModelScope.launch {
+                    while (isActive) {
+                        _state.update { s -> s.copy(position = controller?.currentPosition ?: s.position) }
+                        delay(500)
+                    }
+                }
+        }
+
+        // Must be called on the main thread — positionTracker is not thread-safe.
+        private fun stopPositionTracking() {
+            positionTracker?.cancel()
+            positionTracker = null
+        }
 
         private fun syncStateFromController() {
             val ctrl = controller ?: return
@@ -149,6 +173,7 @@ class PlayerViewModel
 
         fun seekTo(positionMs: Long) {
             controller?.seekTo(positionMs)
+            _state.update { it.copy(position = positionMs) }
         }
 
         fun toggleShuffle() {
@@ -173,6 +198,7 @@ class PlayerViewModel
         }
 
         override fun onCleared() {
+            positionTracker?.cancel()
             controller?.release()
             super.onCleared()
         }
