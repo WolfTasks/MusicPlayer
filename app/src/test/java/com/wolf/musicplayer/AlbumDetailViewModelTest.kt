@@ -6,26 +6,10 @@ import com.wolf.musicplayer.ui.screen.album.AlbumDetailViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 
 class AlbumDetailViewModelTest {
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(StandardTestDispatcher())
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
     @Test
     fun `reads songs for the album name from saved state`() {
         val repo = mockk<SongRepository>()
