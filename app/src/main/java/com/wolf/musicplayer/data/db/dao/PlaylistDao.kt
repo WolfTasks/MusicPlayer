@@ -50,6 +50,7 @@ interface PlaylistDao {
   @Query("SELECT playlistId FROM playlist_songs WHERE songId = :songId")
   fun observePlaylistIdsForSong(songId: Long): Flow<List<Long>>
 
+  // NOTE: SQL is intentionally identical to observeSongsForPlaylist. If the query changes, update both.
   @Query(
     """
         SELECT s.* FROM songs s

@@ -3,6 +3,7 @@ package com.wolf.musicplayer
 import com.wolf.musicplayer.data.db.dao.PlaylistDao
 import com.wolf.musicplayer.data.db.entity.SongEntity
 import com.wolf.musicplayer.data.repository.PlaylistRepository
+import com.wolf.musicplayer.domain.model.SourceType
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -41,5 +42,7 @@ class PlaylistRepositoryTest {
 
       assertEquals(1, songs.size)
       assertEquals("Test", songs[0].title)
+      assertEquals(7L, songs[0].id)
+      assertEquals(SourceType.LOCAL, songs[0].sourceType)
     }
 }
