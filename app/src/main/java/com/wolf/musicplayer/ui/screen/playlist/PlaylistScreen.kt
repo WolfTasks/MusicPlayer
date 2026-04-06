@@ -2,6 +2,7 @@ package com.wolf.musicplayer.ui.screen.playlist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -140,27 +141,27 @@ fun PlaylistScreen(
                     .padding(contentPadding),
         ) {
             items(playlists, key = { it.id }) { playlist ->
-                ListItem(
-                    headlineContent = { Text(playlist.name) },
-                    trailingContent = {
-                        IconButton(onClick = {
-                            viewModel.playPlaylist(playlist.id, onPlaySongs)
-                        }) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Abspielen")
-                        }
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .combinedClickable(
-                                onClick = { onPlaylistClick(playlist.id) },
-                                onLongClick = { menuTarget = playlist },
-                            ),
-                )
-                if (menuTarget?.id == playlist.id) {
+                Box {
+                    ListItem(
+                        headlineContent = { Text(playlist.name) },
+                        trailingContent = {
+                            IconButton(onClick = {
+                                viewModel.playPlaylist(playlist.id, onPlaySongs)
+                            }) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = "Abspielen")
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                                .combinedClickable(
+                                    onClick = { onPlaylistClick(playlist.id) },
+                                    onLongClick = { menuTarget = playlist },
+                                ),
+                    )
                     DropdownMenu(
-                        expanded = true,
+                        expanded = menuTarget?.id == playlist.id,
                         onDismissRequest = { menuTarget = null },
                     ) {
                         DropdownMenuItem(
