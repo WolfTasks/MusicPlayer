@@ -1,5 +1,6 @@
 package com.wolf.musicplayer.ui.screen.artist
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ArtistScreen(
     contentPadding: PaddingValues,
+    onItemClick: (String) -> Unit,
     viewModel: ArtistViewModel = hiltViewModel(),
 ) {
     val artists by viewModel.artists.collectAsStateWithLifecycle()
@@ -30,11 +32,18 @@ fun ArtistScreen(
     Scaffold(
         topBar = { TopAppBar(title = { Text("Künstler") }) },
     ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(contentPadding)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(contentPadding),
+        ) {
             items(artists, key = { it }) { artist ->
                 ListItem(
                     headlineContent = { Text(artist) },
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .clickable { onItemClick(artist) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
