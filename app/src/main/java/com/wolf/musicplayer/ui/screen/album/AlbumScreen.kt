@@ -1,5 +1,6 @@
 package com.wolf.musicplayer.ui.screen.album
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun AlbumScreen(
     contentPadding: PaddingValues,
+    onItemClick: (String) -> Unit,
     viewModel: AlbumViewModel = hiltViewModel(),
 ) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
@@ -30,11 +32,18 @@ fun AlbumScreen(
     Scaffold(
         topBar = { TopAppBar(title = { Text("Alben") }) },
     ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(contentPadding)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(contentPadding),
+        ) {
             items(albums, key = { it }) { album ->
                 ListItem(
                     headlineContent = { Text(album) },
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .clickable { onItemClick(album) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
