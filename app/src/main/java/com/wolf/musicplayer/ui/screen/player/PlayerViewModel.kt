@@ -89,6 +89,10 @@ class PlayerViewModel
                 }
 
                 override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_READY) {
+                        val ctrl = controller ?: return
+                        _state.update { it.copy(duration = ctrl.duration.coerceAtLeast(0L)) }
+                    }
                     if (state == Player.STATE_ENDED) {
                         stopPositionTracking()
                         currentSongId?.let { id ->
@@ -113,7 +117,12 @@ class PlayerViewModel
             positionTracker =
                 viewModelScope.launch {
                     while (isActive) {
-                        _state.update { s -> s.copy(position = controller?.currentPosition ?: s.position) }
+                        _state.update { s ->
+                            s.copy(
+                                position = controller?.currentPosition ?: s.position,
+                                duration = controller?.duration?.coerceAtLeast(0L) ?: s.duration,
+                            )
+                        }
                         delay(500)
                     }
                 }
