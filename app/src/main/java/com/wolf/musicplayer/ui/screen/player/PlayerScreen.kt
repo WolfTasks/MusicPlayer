@@ -45,6 +45,8 @@ fun PlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val song = state.currentSong
+    var isDragging by remember { mutableStateOf(false) }
+    var dragValue by remember { mutableFloatStateOf(0f) }
 
     Column(
         modifier =
@@ -79,8 +81,6 @@ fun PlayerScreen(
         )
 
         // Seekbar
-        var isDragging by remember { mutableStateOf(false) }
-        var dragValue by remember { mutableFloatStateOf(0f) }
         val sliderValue =
             if (isDragging) {
                 dragValue
@@ -107,7 +107,8 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(state.position.toMinSec(), style = MaterialTheme.typography.labelSmall)
+                val displayPosition = if (isDragging) (dragValue * state.duration).toLong() else state.position
+                Text(displayPosition.toMinSec(), style = MaterialTheme.typography.labelSmall)
                 Text(state.duration.toMinSec(), style = MaterialTheme.typography.labelSmall)
             }
         }
