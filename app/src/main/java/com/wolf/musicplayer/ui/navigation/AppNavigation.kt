@@ -1,5 +1,6 @@
 package com.wolf.musicplayer.ui.navigation
 
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -18,11 +19,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.wolf.musicplayer.ui.screen.album.AlbumDetailScreen
 import com.wolf.musicplayer.ui.screen.album.AlbumScreen
+import com.wolf.musicplayer.ui.screen.artist.ArtistDetailScreen
 import com.wolf.musicplayer.ui.screen.artist.ArtistScreen
 import com.wolf.musicplayer.ui.screen.library.LibraryScreen
 import com.wolf.musicplayer.ui.screen.player.PlayerScreen
@@ -94,10 +99,46 @@ fun AppNavigation() {
                 PlaylistScreen(contentPadding = innerPadding)
             }
             composable(Screen.Artists.route) {
-                ArtistScreen(contentPadding = innerPadding)
+                ArtistScreen(
+                    contentPadding = innerPadding,
+                    onItemClick = { artistName ->
+                        navController.navigate("artists/${Uri.encode(artistName)}")
+                    },
+                )
+            }
+            composable(
+                route = "artists/{artistName}",
+                arguments = listOf(navArgument("artistName") { type = NavType.StringType }),
+            ) {
+                ArtistDetailScreen(
+                    contentPadding = innerPadding,
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { songs, index ->
+                        playerViewModel.playSongs(songs, index)
+                        navController.navigate(Screen.Player.route)
+                    },
+                )
             }
             composable(Screen.Albums.route) {
-                AlbumScreen(contentPadding = innerPadding)
+                AlbumScreen(
+                    contentPadding = innerPadding,
+                    onItemClick = { albumName ->
+                        navController.navigate("albums/${Uri.encode(albumName)}")
+                    },
+                )
+            }
+            composable(
+                route = "albums/{albumName}",
+                arguments = listOf(navArgument("albumName") { type = NavType.StringType }),
+            ) {
+                AlbumDetailScreen(
+                    contentPadding = innerPadding,
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { songs, index ->
+                        playerViewModel.playSongs(songs, index)
+                        navController.navigate(Screen.Player.route)
+                    },
+                )
             }
             composable(Screen.Player.route) {
                 PlayerScreen(

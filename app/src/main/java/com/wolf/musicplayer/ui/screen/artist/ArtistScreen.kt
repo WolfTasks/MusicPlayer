@@ -33,17 +33,19 @@ fun ArtistScreen(
         topBar = { TopAppBar(title = { Text("Künstler") }) },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(contentPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(contentPadding),
         ) {
             items(artists, key = { it }) { artist ->
                 ListItem(
                     headlineContent = { Text(artist) },
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .clickable { onItemClick(artist) },
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { onItemClick(artist) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }

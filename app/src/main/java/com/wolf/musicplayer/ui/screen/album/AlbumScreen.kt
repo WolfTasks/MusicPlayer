@@ -33,17 +33,19 @@ fun AlbumScreen(
         topBar = { TopAppBar(title = { Text("Alben") }) },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(contentPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(contentPadding),
         ) {
             items(albums, key = { it }) { album ->
                 ListItem(
                     headlineContent = { Text(album) },
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .clickable { onItemClick(album) },
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 8.dp)
+                            .clickable { onItemClick(album) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
