@@ -26,6 +26,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -75,10 +79,28 @@ fun PlayerScreen(
         )
 
         // Seekbar
+        var isDragging by remember { mutableStateOf(false) }
+        var dragValue by remember { mutableFloatStateOf(0f) }
+        val sliderValue =
+            if (isDragging) {
+                dragValue
+            } else if (state.duration > 0) {
+                state.position.toFloat() / state.duration
+            } else {
+                0f
+            }
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Slider(
-                value = if (state.duration > 0) state.position.toFloat() / state.duration else 0f,
-                onValueChange = { viewModel.seekTo((it * state.duration).toLong()) },
+                value = sliderValue,
+                onValueChange = { v ->
+                    isDragging = true
+                    dragValue = v
+                },
+                onValueChangeFinished = {
+                    viewModel.seekTo((dragValue * state.duration).toLong())
+                    isDragging = false
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
