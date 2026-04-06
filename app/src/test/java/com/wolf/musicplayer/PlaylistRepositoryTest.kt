@@ -14,35 +14,35 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PlaylistRepositoryTest {
-  private val dao = mockk<PlaylistDao>()
-  private val repo = PlaylistRepository(dao)
+    private val dao = mockk<PlaylistDao>()
+    private val repo = PlaylistRepository(dao)
 
-  @Test
-  fun `observePlaylistIdsForSong returns set of playlist ids`() =
-    runTest {
-      every { dao.observePlaylistIdsForSong(42L) } returns flowOf(listOf(1L, 3L))
+    @Test
+    fun `observePlaylistIdsForSong returns set of playlist ids`() =
+        runTest {
+            every { dao.observePlaylistIdsForSong(42L) } returns flowOf(listOf(1L, 3L))
 
-      val result = repo.observePlaylistIdsForSong(42L).first()
+            val result = repo.observePlaylistIdsForSong(42L).first()
 
-      assertEquals(setOf(1L, 3L), result)
-    }
+            assertEquals(setOf(1L, 3L), result)
+        }
 
-  @Test
-  fun `getSongsForPlaylist maps entities to domain songs`() =
-    runTest {
-      val entity =
-        SongEntity(
-          id = 7L, title = "Test", artist = "A", album = "B",
-          duration = 1000L, sourceType = "LOCAL",
-          serverId = null, serverSongId = null, localPath = "/p", cachedPath = null,
-        )
-      coEvery { dao.getSongsForPlaylist(10L) } returns listOf(entity)
+    @Test
+    fun `getSongsForPlaylist maps entities to domain songs`() =
+        runTest {
+            val entity =
+                SongEntity(
+                    id = 7L, title = "Test", artist = "A", album = "B",
+                    duration = 1000L, sourceType = "LOCAL",
+                    serverId = null, serverSongId = null, localPath = "/p", cachedPath = null,
+                )
+            coEvery { dao.getSongsForPlaylist(10L) } returns listOf(entity)
 
-      val songs = repo.getSongsForPlaylist(10L)
+            val songs = repo.getSongsForPlaylist(10L)
 
-      assertEquals(1, songs.size)
-      assertEquals("Test", songs[0].title)
-      assertEquals(7L, songs[0].id)
-      assertEquals(SourceType.LOCAL, songs[0].sourceType)
-    }
+            assertEquals(1, songs.size)
+            assertEquals("Test", songs[0].title)
+            assertEquals(7L, songs[0].id)
+            assertEquals(SourceType.LOCAL, songs[0].sourceType)
+        }
 }
