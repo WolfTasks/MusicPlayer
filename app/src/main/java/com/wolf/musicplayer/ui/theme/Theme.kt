@@ -9,14 +9,14 @@ private val WolfColorScheme =
         primary = WolfSilver,
         onPrimary = WolfOnSilver,
         primaryContainer = WolfSilverMuted,
-        onPrimaryContainer = WolfWhite,
+        onPrimaryContainer = WolfOnSilver,
         background = WolfNavy,
         onBackground = WolfWhite,
         surface = WolfNavySurface,
         onSurface = WolfWhite,
         surfaceVariant = WolfNavyVariant,
-        onSurfaceVariant = WolfSilverMuted,
-        outline = WolfNavyVariant,
+        onSurfaceVariant = WolfSilverSubtle,
+        outline = WolfSilverMuted,
     )
 
 @Composable
