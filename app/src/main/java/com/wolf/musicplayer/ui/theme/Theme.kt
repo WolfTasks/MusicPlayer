@@ -4,25 +4,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
-private val DarkColorScheme =
+private val WolfColorScheme =
     darkColorScheme(
-        primary = GreenAccent,
-        onPrimary = OnDark,
-        primaryContainer = GreenAccentDim,
-        onPrimaryContainer = OnDark,
-        background = DarkBackground,
-        onBackground = OnDark,
-        surface = DarkSurface,
-        onSurface = OnDark,
-        surfaceVariant = DarkSurfaceVariant,
-        onSurfaceVariant = OnDarkSecondary,
-        outline = OnDarkDisabled,
+        primary = WolfSilver,
+        onPrimary = WolfOnSilver,
+        primaryContainer = WolfSilverMuted,
+        onPrimaryContainer = WolfWhite,
+        background = WolfNavy,
+        onBackground = WolfWhite,
+        surface = WolfNavySurface,
+        onSurface = WolfWhite,
+        surfaceVariant = WolfNavyVariant,
+        onSurfaceVariant = WolfSilverMuted,
+        outline = WolfNavyVariant,
     )
 
 @Composable
 fun MusicPlayerTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = WolfColorScheme,
         typography = Typography,
         content = content,
     )
