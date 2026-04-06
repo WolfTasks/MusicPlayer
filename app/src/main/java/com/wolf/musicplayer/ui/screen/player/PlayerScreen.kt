@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
+import com.wolf.musicplayer.ui.component.AddToPlaylistSheet
 import com.wolf.musicplayer.ui.component.AlbumArt
 
 @Composable
@@ -44,9 +46,12 @@ fun PlayerScreen(
     contentPadding: PaddingValues,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val songPlaylists by viewModel.songPlaylists.collectAsStateWithLifecycle()
     val song = state.currentSong
     var isDragging by remember { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(0f) }
+    var showAddToPlaylist by remember { mutableStateOf(false) }
 
     Column(
         modifier =
@@ -137,7 +142,7 @@ fun PlayerScreen(
             }
         }
 
-        // Shuffle + Repeat
+        // Shuffle + Playlist + Repeat
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -152,6 +157,16 @@ fun PlayerScreen(
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
+                )
+            }
+            IconButton(
+                onClick = { showAddToPlaylist = true },
+                enabled = song != null,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlaylistAdd,
+                    contentDescription = "Zu Playlist hinzufügen",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             IconButton(onClick = { viewModel.cycleRepeatMode() }) {
@@ -171,6 +186,18 @@ fun PlayerScreen(
                         },
                 )
             }
+        }
+
+        // Add-to-playlist bottom sheet
+        if (showAddToPlaylist && song != null) {
+            AddToPlaylistSheet(
+                song = song,
+                playlists = playlists,
+                songPlaylistIds = songPlaylists,
+                onAddToPlaylist = { playlist -> viewModel.addSongToPlaylist(song, playlist) },
+                onCreateAndAdd = { name -> viewModel.createPlaylistAndAddSong(name, song) },
+                onDismiss = { showAddToPlaylist = false },
+            )
         }
     }
 }
