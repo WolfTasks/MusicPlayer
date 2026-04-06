@@ -10,17 +10,26 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
+import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
 import com.wolf.musicplayer.domain.WeightedShuffler
+import com.wolf.musicplayer.domain.model.Playlist
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.service.MusicService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -44,9 +53,28 @@ class PlayerViewModel
         private val songRepository: SongRepository,
         private val playWeightRepository: PlayWeightRepository,
         private val shuffler: WeightedShuffler,
+        private val playlistRepo: PlaylistRepository,
     ) : ViewModel() {
         private val _state = MutableStateFlow(PlayerState())
         val state: StateFlow<PlayerState> = _state.asStateFlow()
+
+        val playlists =
+            playlistRepo.observeAll()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val songPlaylists =
+            state
+                .map { it.currentSong?.id }
+                .distinctUntilChanged()
+                .flatMapLatest { songId ->
+                    if (songId != null) {
+                        playlistRepo.observePlaylistIdsForSong(songId)
+                    } else {
+                        flowOf(emptySet())
+                    }
+                }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
         private var controller: MediaController? = null
         private var currentQueue: List<Song> = emptyList()
@@ -204,6 +232,26 @@ class PlayerViewModel
             val songs = currentQueue.ifEmpty { return null }
             val weights = songs.map { playWeightRepository.getWeight(it.id) }
             return shuffler.pick(songs, weights)
+        }
+
+        fun addSongToPlaylist(
+            song: Song,
+            playlist: Playlist,
+        ) {
+            viewModelScope.launch {
+                val currentCount = playlistRepo.getSongsForPlaylist(playlist.id).size
+                playlistRepo.addSong(playlist.id, song.id, currentCount)
+            }
+        }
+
+        fun createPlaylistAndAddSong(
+            name: String,
+            song: Song,
+        ) {
+            viewModelScope.launch {
+                val playlistId = playlistRepo.create(name)
+                playlistRepo.addSong(playlistId, song.id, 0)
+            }
         }
 
         override fun onCleared() {
