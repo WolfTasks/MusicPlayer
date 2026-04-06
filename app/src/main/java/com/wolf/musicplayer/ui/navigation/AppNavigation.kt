@@ -32,6 +32,7 @@ import com.wolf.musicplayer.ui.screen.artist.ArtistScreen
 import com.wolf.musicplayer.ui.screen.library.LibraryScreen
 import com.wolf.musicplayer.ui.screen.player.PlayerScreen
 import com.wolf.musicplayer.ui.screen.player.PlayerViewModel
+import com.wolf.musicplayer.ui.screen.playlist.PlaylistDetailScreen
 import com.wolf.musicplayer.ui.screen.playlist.PlaylistScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -96,7 +97,29 @@ fun AppNavigation() {
                 )
             }
             composable(Screen.Playlists.route) {
-                PlaylistScreen(contentPadding = innerPadding)
+                PlaylistScreen(
+                    contentPadding = innerPadding,
+                    onPlaylistClick = { playlistId ->
+                        navController.navigate("playlists/$playlistId")
+                    },
+                    onPlaySongs = { songs ->
+                        playerViewModel.playSongs(songs, 0)
+                        navController.navigate(Screen.Player.route)
+                    },
+                )
+            }
+            composable(
+                route = "playlists/{playlistId}",
+                arguments = listOf(navArgument("playlistId") { type = NavType.LongType }),
+            ) {
+                PlaylistDetailScreen(
+                    contentPadding = innerPadding,
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { songs, index ->
+                        playerViewModel.playSongs(songs, index)
+                        navController.navigate(Screen.Player.route)
+                    },
+                )
             }
             composable(Screen.Artists.route) {
                 ArtistScreen(
