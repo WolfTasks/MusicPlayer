@@ -25,6 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.wolf.musicplayer.ui.component.AddToPlaylistSheet
 import com.wolf.musicplayer.ui.screen.album.AlbumDetailScreen
 import com.wolf.musicplayer.ui.screen.album.AlbumScreen
 import com.wolf.musicplayer.ui.screen.artist.ArtistDetailScreen
@@ -61,6 +62,9 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val playerViewModel: PlayerViewModel = hiltViewModel()
     val playerState by playerViewModel.state.collectAsStateWithLifecycle()
+    val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
+    val addToPlaylistSong by playerViewModel.addToPlaylistSong.collectAsStateWithLifecycle()
+    val addToPlaylistSongPlaylists by playerViewModel.addToPlaylistSongPlaylists.collectAsStateWithLifecycle()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -86,6 +90,9 @@ fun AppNavigation() {
             }
         },
     ) { innerPadding ->
+        val onMoreClick: (com.wolf.musicplayer.domain.model.Song) -> Unit = { song ->
+            playerViewModel.setAddToPlaylistSong(song)
+        }
         NavHost(navController = navController, startDestination = Screen.Library.route) {
             composable(Screen.Library.route) {
                 LibraryScreen(
@@ -94,6 +101,7 @@ fun AppNavigation() {
                         playerViewModel.playSongs(songs, index)
                         navController.navigate(Screen.Player.route)
                     },
+                    onMoreClick = onMoreClick,
                 )
             }
             composable(Screen.Playlists.route) {
@@ -119,6 +127,7 @@ fun AppNavigation() {
                         playerViewModel.playSongs(songs, index)
                         navController.navigate(Screen.Player.route)
                     },
+                    onMoreClick = onMoreClick,
                 )
             }
             composable(Screen.Artists.route) {
@@ -140,6 +149,7 @@ fun AppNavigation() {
                         playerViewModel.playSongs(songs, index)
                         navController.navigate(Screen.Player.route)
                     },
+                    onMoreClick = onMoreClick,
                 )
             }
             composable(Screen.Albums.route) {
@@ -161,6 +171,7 @@ fun AppNavigation() {
                         playerViewModel.playSongs(songs, index)
                         navController.navigate(Screen.Player.route)
                     },
+                    onMoreClick = onMoreClick,
                 )
             }
             composable(Screen.Player.route) {
@@ -169,6 +180,16 @@ fun AppNavigation() {
                     contentPadding = innerPadding,
                 )
             }
+        }
+        addToPlaylistSong?.let { song ->
+            AddToPlaylistSheet(
+                song = song,
+                playlists = playlists,
+                songPlaylistIds = addToPlaylistSongPlaylists,
+                onAddToPlaylist = { playlist -> playerViewModel.addSongToPlaylist(song, playlist) },
+                onCreateAndAdd = { name -> playerViewModel.createPlaylistAndAddSong(name, song) },
+                onDismiss = { playerViewModel.setAddToPlaylistSong(null) },
+            )
         }
     }
 }
