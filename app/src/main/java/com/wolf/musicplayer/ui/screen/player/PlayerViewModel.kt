@@ -76,6 +76,25 @@ class PlayerViewModel
                 }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+        private val _addToPlaylistSong = MutableStateFlow<Song?>(null)
+        val addToPlaylistSong: StateFlow<Song?> = _addToPlaylistSong.asStateFlow()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val addToPlaylistSongPlaylists: StateFlow<Set<Long>> =
+            _addToPlaylistSong
+                .flatMapLatest { song ->
+                    if (song != null) {
+                        playlistRepo.observePlaylistIdsForSong(song.id)
+                    } else {
+                        flowOf(emptySet())
+                    }
+                }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+        fun setAddToPlaylistSong(song: Song?) {
+            _addToPlaylistSong.value = song
+        }
+
         private var controller: MediaController? = null
         private var currentQueue: List<Song> = emptyList()
         private var currentSongId: Long? = null
