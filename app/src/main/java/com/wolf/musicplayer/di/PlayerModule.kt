@@ -25,7 +25,6 @@ object PlayerModule {
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .build(),
-                // handleAudioFocus
                 true,
             )
             .build()
