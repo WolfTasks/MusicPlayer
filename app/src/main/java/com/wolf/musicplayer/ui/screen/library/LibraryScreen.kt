@@ -36,6 +36,7 @@ import com.wolf.musicplayer.ui.component.SongRow
 fun LibraryScreen(
     contentPadding: PaddingValues,
     onSongClick: (songs: List<Song>, index: Int) -> Unit,
+    onMoreClick: (Song) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun LibraryScreen(
                         SongRow(
                             song = song,
                             onClick = { onSongClick(state.filtered, index) },
+                            onMoreClick = onMoreClick,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     }
