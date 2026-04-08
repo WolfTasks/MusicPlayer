@@ -1,6 +1,8 @@
 package com.wolf.musicplayer.di
 
 import android.content.Context
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.Module
 import dagger.Provides
@@ -16,5 +18,15 @@ object PlayerModule {
     @Singleton
     fun provideExoPlayer(
         @ApplicationContext context: Context,
-    ): ExoPlayer = ExoPlayer.Builder(context).build()
+    ): ExoPlayer =
+        ExoPlayer.Builder(context)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(),
+                // handleAudioFocus
+                true,
+            )
+            .build()
 }
