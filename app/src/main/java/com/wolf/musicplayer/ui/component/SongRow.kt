@@ -1,5 +1,6 @@
 package com.wolf.musicplayer.ui.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +31,9 @@ fun SongRow(
 ) {
     Row(
         modifier =
-            modifier
+            Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .then(modifier)
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
