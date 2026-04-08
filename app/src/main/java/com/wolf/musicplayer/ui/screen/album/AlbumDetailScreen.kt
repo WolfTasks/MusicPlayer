@@ -29,6 +29,7 @@ fun AlbumDetailScreen(
     contentPadding: PaddingValues,
     onBack: () -> Unit,
     onSongClick: (songs: List<Song>, index: Int) -> Unit,
+    onMoreClick: (Song) -> Unit,
     viewModel: AlbumDetailViewModel = hiltViewModel(),
 ) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
@@ -56,6 +57,7 @@ fun AlbumDetailScreen(
                 SongRow(
                     song = song,
                     onClick = { onSongClick(songs, index) },
+                    onMoreClick = onMoreClick,
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
