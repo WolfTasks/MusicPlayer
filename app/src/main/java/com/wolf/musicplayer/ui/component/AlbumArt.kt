@@ -1,18 +1,21 @@
 package com.wolf.musicplayer.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.wolf.musicplayer.R
+import coil.compose.SubcomposeAsyncImage
 
 @Composable
 fun AlbumArt(
@@ -21,19 +24,29 @@ fun AlbumArt(
     cornerRadius: Dp = 8.dp,
     modifier: Modifier = Modifier,
 ) {
-    val clipModifier =
-        modifier
-            .size(size)
-            .clip(RoundedCornerShape(cornerRadius))
-            .background(Color(0xFF0D1830))
-
-    AsyncImage(
+    SubcomposeAsyncImage(
         model = artUrl,
         contentDescription = "Album art",
         contentScale = ContentScale.Crop,
-        placeholder = painterResource(R.drawable.ic_launcher_foreground),
-        error = painterResource(R.drawable.ic_launcher_foreground),
-        fallback = painterResource(R.drawable.ic_launcher_foreground),
-        modifier = clipModifier,
+        modifier =
+            modifier
+                .size(size)
+                .clip(RoundedCornerShape(cornerRadius)),
+        error = {
+            Box(
+                modifier =
+                    Modifier
+                        .size(size)
+                        .clip(RoundedCornerShape(cornerRadius))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
     )
 }
