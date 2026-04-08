@@ -27,5 +27,6 @@ object PlayerModule {
                     .build(),
                 true,
             )
+            .setHandleAudioBecomingNoisy(true)
             .build()
 }
