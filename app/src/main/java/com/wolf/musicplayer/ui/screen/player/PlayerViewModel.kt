@@ -82,9 +82,11 @@ class PlayerViewModel
         @OptIn(ExperimentalCoroutinesApi::class)
         val addToPlaylistSongPlaylists: StateFlow<Set<Long>> =
             _addToPlaylistSong
-                .flatMapLatest { song ->
-                    if (song != null) {
-                        playlistRepo.observePlaylistIdsForSong(song.id)
+                .map { it?.id }
+                .distinctUntilChanged()
+                .flatMapLatest { songId ->
+                    if (songId != null) {
+                        playlistRepo.observePlaylistIdsForSong(songId)
                     } else {
                         flowOf(emptySet())
                     }
