@@ -20,7 +20,7 @@ import com.wolf.musicplayer.data.db.entity.SongEntity
         ServerEntity::class,
     ],
     version = 1,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao

@@ -22,4 +22,34 @@ class WeightedShuffler
 
             return items.last()
         }
+
+        fun <T> permute(
+            items: List<T>,
+            weights: List<Float>,
+        ): List<T> {
+            require(items.isNotEmpty()) { "Items list must not be empty" }
+            require(items.size == weights.size) { "Items and weights must have equal size" }
+            val remaining = items.toMutableList()
+            val remainingWeights = weights.toMutableList()
+            val result = mutableListOf<T>()
+            while (remaining.isNotEmpty()) {
+                // Use forEachIndexed to find the picked item's index without relying on indexOf
+                val weightSum = remainingWeights.sum()
+                var randomValue = Math.random().toFloat() * weightSum
+                var pickedIdx = 0
+                for (i in remaining.indices) {
+                    randomValue -= remainingWeights[i]
+                    if (randomValue <= 0f) {
+                        pickedIdx = i
+                        break
+                    }
+                    pickedIdx = i
+                }
+                val picked = remaining[pickedIdx]
+                result.add(picked)
+                remaining.removeAt(pickedIdx)
+                remainingWeights.removeAt(pickedIdx)
+            }
+            return result
+        }
     }

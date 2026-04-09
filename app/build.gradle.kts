@@ -46,6 +46,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -72,6 +76,6 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.robolectric)
-    testImplementation(libs.room.testing)
+    androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.junit.ext)
 }
