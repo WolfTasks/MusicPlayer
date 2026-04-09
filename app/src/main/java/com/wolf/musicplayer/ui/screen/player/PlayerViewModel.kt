@@ -158,6 +158,10 @@ class PlayerViewModel
                         }
                     }
                 }
+
+                override fun onRepeatModeChanged(repeatMode: Int) {
+                    _state.update { it.copy(repeatMode = repeatMode) }
+                }
             }
 
         // Must be called on the main thread — positionTracker is not thread-safe.
@@ -194,6 +198,7 @@ class PlayerViewModel
                     isPlaying = ctrl.isPlaying,
                     duration = ctrl.duration.coerceAtLeast(0L),
                     queue = currentQueue,
+                    repeatMode = ctrl.repeatMode,
                 )
             }
         }
@@ -246,7 +251,6 @@ class PlayerViewModel
                     else -> Player.REPEAT_MODE_OFF
                 }
             controller?.repeatMode = next
-            _state.update { it.copy(repeatMode = next) }
         }
 
         suspend fun nextWeightedSong(): Song? {
