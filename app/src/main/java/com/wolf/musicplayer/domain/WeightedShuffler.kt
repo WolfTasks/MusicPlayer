@@ -33,17 +33,15 @@ class WeightedShuffler
             val remainingWeights = weights.toMutableList()
             val result = mutableListOf<T>()
             while (remaining.isNotEmpty()) {
-                // Use forEachIndexed to find the picked item's index without relying on indexOf
                 val weightSum = remainingWeights.sum()
-                var randomValue = Math.random().toFloat() * weightSum
-                var pickedIdx = 0
+                var randomValue = kotlin.random.Random.nextFloat() * weightSum
+                var pickedIdx = remaining.size - 1
                 for (i in remaining.indices) {
                     randomValue -= remainingWeights[i]
                     if (randomValue <= 0f) {
                         pickedIdx = i
                         break
                     }
-                    pickedIdx = i
                 }
                 val picked = remaining[pickedIdx]
                 result.add(picked)
