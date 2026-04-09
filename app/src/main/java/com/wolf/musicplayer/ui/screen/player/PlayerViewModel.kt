@@ -99,6 +99,7 @@ class PlayerViewModel
 
         private var controller: MediaController? = null
         private var currentQueue: List<Song> = emptyList()
+        private var activeQueue: List<Song> = emptyList()
         private var currentSongId: Long? = null
         private var playbackStartPosition: Long = 0L
         private var positionTracker: Job? = null
@@ -190,7 +191,7 @@ class PlayerViewModel
         private fun syncStateFromController() {
             val ctrl = controller ?: return
             val idx = ctrl.currentMediaItemIndex
-            val song = currentQueue.getOrNull(idx)
+            val song = activeQueue.getOrNull(idx)
             currentSongId = song?.id
             _state.update {
                 it.copy(
@@ -209,17 +210,33 @@ class PlayerViewModel
         ) {
             currentQueue = songs
             val ctrl = controller ?: return
-            val items =
-                songs.map { song ->
-                    MediaItem.Builder()
-                        .setMediaId(song.id.toString())
-                        .setUri(song.localPath ?: song.cachedPath ?: "")
-                        .build()
-                }
-            ctrl.setMediaItems(items, startIndex, 0L)
-            ctrl.prepare()
-            ctrl.play()
-            syncStateFromController()
+            viewModelScope.launch {
+                activeQueue =
+                    if (_state.value.shuffleEnabled) {
+                        val weights = songs.map { playWeightRepository.getWeight(it.id) }
+                        shuffler.permute(songs, weights)
+                    } else {
+                        songs
+                    }
+                val startSong = songs.getOrNull(startIndex)
+                val activeIndex =
+                    if (startSong != null) {
+                        activeQueue.indexOfFirst { it.id == startSong.id }.coerceAtLeast(0)
+                    } else {
+                        0
+                    }
+                val items =
+                    activeQueue.map { song ->
+                        MediaItem.Builder()
+                            .setMediaId(song.id.toString())
+                            .setUri(song.localPath ?: song.cachedPath ?: "")
+                            .build()
+                    }
+                ctrl.setMediaItems(items, activeIndex, 0L)
+                ctrl.prepare()
+                ctrl.play()
+                syncStateFromController()
+            }
         }
 
         fun playPause() {
@@ -240,7 +257,32 @@ class PlayerViewModel
         }
 
         fun toggleShuffle() {
-            _state.update { it.copy(shuffleEnabled = !it.shuffleEnabled) }
+            viewModelScope.launch {
+                val enabled = !_state.value.shuffleEnabled
+                _state.update { it.copy(shuffleEnabled = enabled) }
+                val ctrl = controller ?: return@launch
+                val songId = currentSongId
+                val position = ctrl.currentPosition
+                val wasPlaying = ctrl.isPlaying
+                activeQueue =
+                    if (enabled) {
+                        val weights = currentQueue.map { playWeightRepository.getWeight(it.id) }
+                        shuffler.permute(currentQueue, weights)
+                    } else {
+                        currentQueue
+                    }
+                val newIndex = activeQueue.indexOfFirst { it.id == songId }.coerceAtLeast(0)
+                val items =
+                    activeQueue.map { song ->
+                        MediaItem.Builder()
+                            .setMediaId(song.id.toString())
+                            .setUri(song.localPath ?: song.cachedPath ?: "")
+                            .build()
+                    }
+                ctrl.setMediaItems(items, newIndex, position)
+                ctrl.prepare()
+                if (wasPlaying) ctrl.play()
+            }
         }
 
         fun cycleRepeatMode() {
