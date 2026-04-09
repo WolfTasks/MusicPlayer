@@ -33,8 +33,13 @@ class MigrationTest {
 
         // Verify the playlist row survived
         val cursor = db.query("SELECT name FROM playlists WHERE name = 'Favorites'")
-        assertEquals(1, cursor.count)
-        cursor.close()
+        try {
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals("Favorites", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+        } finally {
+            cursor.close()
+        }
     }
 
     companion object {

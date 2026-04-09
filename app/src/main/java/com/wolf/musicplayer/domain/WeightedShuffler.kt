@@ -33,6 +33,8 @@ class WeightedShuffler
             val remainingWeights = weights.toMutableList()
             val result = mutableListOf<T>()
             while (remaining.isNotEmpty()) {
+                // Inline the draw step to track the index directly. Using pick() + indexOf() would be unreliable
+                // when the list contains duplicate items.
                 val weightSum = remainingWeights.sum()
                 var randomValue = kotlin.random.Random.nextFloat() * weightSum
                 var pickedIdx = remaining.size - 1
