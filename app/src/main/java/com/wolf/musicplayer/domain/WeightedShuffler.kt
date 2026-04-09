@@ -13,7 +13,7 @@ class WeightedShuffler
             require(items.size == weights.size) { "Items and weights must have equal size" }
 
             val total = weights.sum()
-            var remaining = Math.random().toFloat() * total
+            var remaining = kotlin.random.Random.nextFloat() * total
 
             for (i in items.indices) {
                 remaining -= weights[i]
