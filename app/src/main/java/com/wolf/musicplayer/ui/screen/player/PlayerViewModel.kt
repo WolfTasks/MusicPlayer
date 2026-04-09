@@ -208,8 +208,8 @@ class PlayerViewModel
             songs: List<Song>,
             startIndex: Int = 0,
         ) {
-            currentQueue = songs
             val ctrl = controller ?: return
+            currentQueue = songs
             viewModelScope.launch {
                 activeQueue =
                     if (_state.value.shuffleEnabled) {
@@ -232,6 +232,7 @@ class PlayerViewModel
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
+                currentSongId = null
                 ctrl.setMediaItems(items, activeIndex, 0L)
                 ctrl.prepare()
                 ctrl.play()
@@ -279,9 +280,11 @@ class PlayerViewModel
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
+                currentSongId = null
                 ctrl.setMediaItems(items, newIndex, position)
                 ctrl.prepare()
                 if (wasPlaying) ctrl.play()
+                syncStateFromController()
             }
         }
 
