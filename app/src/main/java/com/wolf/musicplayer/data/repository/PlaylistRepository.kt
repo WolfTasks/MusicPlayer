@@ -27,6 +27,8 @@ class PlaylistRepository
 
         suspend fun getSongsForPlaylist(playlistId: Long): List<Song> = dao.getSongsForPlaylist(playlistId).map(SongEntity::toDomain)
 
+        suspend fun getAll(): List<Playlist> = dao.getAll().map(PlaylistEntity::toDomain)
+
         suspend fun create(name: String): Long = dao.insert(PlaylistEntity(name = name))
 
         suspend fun rename(

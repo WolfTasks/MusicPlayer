@@ -34,6 +34,16 @@ class SongRepository
         }
 
         suspend fun getById(id: Long): Song? = dao.getById(id)?.toDomain()
+
+        suspend fun getAll(): List<Song> = dao.getAll().map(SongEntity::toDomain)
+
+        suspend fun getByAlbum(album: String): List<Song> = dao.getByAlbum(album).map(SongEntity::toDomain)
+
+        suspend fun getByArtist(artist: String): List<Song> = dao.getByArtist(artist).map(SongEntity::toDomain)
+
+        suspend fun getAlbums(): List<String> = dao.getAlbums()
+
+        suspend fun getArtists(): List<String> = dao.getArtists()
     }
 
 private fun SongEntity.toDomain() =

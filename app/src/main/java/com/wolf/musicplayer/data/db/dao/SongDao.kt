@@ -31,6 +31,21 @@ interface SongDao {
     @Query("SELECT DISTINCT album FROM songs ORDER BY album ASC")
     fun observeAlbums(): Flow<List<String>>
 
+    @Query("SELECT * FROM songs ORDER BY title ASC")
+    suspend fun getAll(): List<SongEntity>
+
+    @Query("SELECT * FROM songs WHERE artist = :artist ORDER BY album, title")
+    suspend fun getByArtist(artist: String): List<SongEntity>
+
+    @Query("SELECT * FROM songs WHERE album = :album ORDER BY title ASC")
+    suspend fun getByAlbum(album: String): List<SongEntity>
+
+    @Query("SELECT DISTINCT artist FROM songs ORDER BY artist ASC")
+    suspend fun getArtists(): List<String>
+
+    @Query("SELECT DISTINCT album FROM songs ORDER BY album ASC")
+    suspend fun getAlbums(): List<String>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(songs: List<SongEntity>)
 
