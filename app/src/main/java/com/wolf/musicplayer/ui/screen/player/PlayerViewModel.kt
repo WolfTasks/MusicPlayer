@@ -12,6 +12,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
 import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
+import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Playlist
 import com.wolf.musicplayer.domain.model.Song
@@ -54,6 +55,7 @@ class PlayerViewModel
         private val playWeightRepository: PlayWeightRepository,
         private val shuffler: WeightedShuffler,
         private val playlistRepo: PlaylistRepository,
+        private val shuffleStateHolder: ShuffleStateHolder,
     ) : ViewModel() {
         private val _state = MutableStateFlow(PlayerState())
         val state: StateFlow<PlayerState> = _state.asStateFlow()
@@ -260,6 +262,7 @@ class PlayerViewModel
         fun toggleShuffle() {
             viewModelScope.launch {
                 val enabled = !_state.value.shuffleEnabled
+                shuffleStateHolder.setShuffleEnabled(enabled)
                 _state.update { it.copy(shuffleEnabled = enabled) }
                 val ctrl = controller ?: return@launch
                 val songId = currentSongId
