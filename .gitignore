@@ -22,3 +22,6 @@ app/build/
 # Keystore
 *.jks
 *.keystore
+
+# Git worktrees
+.worktrees/
