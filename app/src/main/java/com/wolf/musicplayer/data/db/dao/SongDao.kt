@@ -31,6 +31,8 @@ interface SongDao {
     @Query("SELECT DISTINCT album FROM songs ORDER BY album ASC")
     fun observeAlbums(): Flow<List<String>>
 
+    // NOTE: Queries below are intentionally identical to their observe* counterparts.
+    // If any observe* query changes, update the matching get* query and vice versa.
     @Query("SELECT * FROM songs ORDER BY title ASC")
     suspend fun getAll(): List<SongEntity>
 
