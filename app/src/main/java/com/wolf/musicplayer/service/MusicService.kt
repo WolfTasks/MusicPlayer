@@ -1,31 +1,35 @@
 package com.wolf.musicplayer.service
 
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MusicService : MediaSessionService() {
+class MusicService : MediaLibraryService() {
     @Inject
     lateinit var player: ExoPlayer
 
-    private var mediaSession: MediaSession? = null
+    @Inject
+    lateinit var autoLibraryCallback: AutoLibraryCallback
+
+    private var mediaLibrarySession: MediaLibrarySession? = null
 
     override fun onCreate() {
         super.onCreate()
-        mediaSession = MediaSession.Builder(this, player).build()
+        mediaLibrarySession = MediaLibrarySession.Builder(this, player, autoLibraryCallback).build()
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaLibrarySession
 
     override fun onDestroy() {
-        mediaSession?.run {
+        mediaLibrarySession?.run {
             player.release()
             release()
-            mediaSession = null
+            mediaLibrarySession = null
         }
+        autoLibraryCallback.release()
         super.onDestroy()
     }
 }
