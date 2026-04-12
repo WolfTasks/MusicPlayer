@@ -255,4 +255,142 @@ class AutoLibraryCallbackTest {
 
             assertEquals(false, result.resultCode == LibraryResult.RESULT_SUCCESS)
         }
+
+    // --- onSetMediaItems ---
+
+    private val mockMediaSession = mockk<MediaSession>(relaxed = true)
+    private val mockController = mockk<MediaSession.ControllerInfo>(relaxed = true)
+
+    private fun mediaItemWithId(mediaId: String): androidx.media3.common.MediaItem =
+        androidx.media3.common.MediaItem.Builder().setMediaId(mediaId).build()
+
+    @Test
+    fun `onSetMediaItems for song context loads all songs starting at tapped song`() =
+        runTest {
+            coEvery { songRepo.getAll() } returns listOf(song(1), song(2), song(3))
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("song:2")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:2 is at index 1
+        }
+
+    @Test
+    fun `onSetMediaItems for album context loads album songs`() =
+        runTest {
+            coEvery { songRepo.getByAlbum("Abbey Road") } returns listOf(song(10), song(11))
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("album:Abbey Road/song:11")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(2, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:11 is at index 1
+        }
+
+    @Test
+    fun `onSetMediaItems for playlist context loads playlist songs`() =
+        runTest {
+            coEvery { playlistRepo.getSongsForPlaylist(5L) } returns listOf(song(20), song(21))
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("playlist:5/song:20")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(2, result.mediaItems.size)
+            assertEquals(0, result.startIndex) // song:20 is at index 0
+        }
+
+    @Test
+    fun `onSetMediaItems for artist context loads artist songs`() =
+        runTest {
+            coEvery { songRepo.getByArtist("Beatles") } returns
+                listOf(song(30), song(31), song(32))
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("artist:Beatles/song:31")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:31 is at index 1
+        }
+
+    @Test
+    fun `onSetMediaItems with shuffle enabled permutes the queue`() =
+        runTest {
+            shuffleStateHolder.setShuffleEnabled(true)
+            val songs = (1L..10L).map { song(it) }
+            coEvery { songRepo.getAll() } returns songs
+            coEvery { playWeightRepo.getWeight(any()) } returns 1.0f
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("song:5")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            // All 10 songs still present
+            assertEquals(10, result.mediaItems.size)
+            // song:5 must be at startIndex
+            assertEquals("song:5", result.mediaItems[result.startIndex].mediaId)
+        }
+
+    @Test
+    fun `onSetMediaItems with shuffle disabled preserves natural order`() =
+        runTest {
+            shuffleStateHolder.setShuffleEnabled(false)
+            coEvery { songRepo.getAll() } returns listOf(song(1), song(2), song(3))
+            coEvery { playWeightRepo.getWeight(any()) } returns 1.0f
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    mockController,
+                    listOf(mediaItemWithId("song:1")),
+                    0,
+                    0L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals("song:1", result.mediaItems[0].mediaId)
+            assertEquals("song:2", result.mediaItems[1].mediaId)
+            assertEquals("song:3", result.mediaItems[2].mediaId)
+            assertEquals(0, result.startIndex)
+        }
 }
