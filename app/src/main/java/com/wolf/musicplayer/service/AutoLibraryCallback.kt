@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.SettableFuture
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
 import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
+import com.wolf.musicplayer.di.ApplicationScope
 import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Song
@@ -32,7 +33,7 @@ class AutoLibraryCallback
         private val playWeightRepository: PlayWeightRepository,
         private val shuffler: WeightedShuffler,
         private val shuffleStateHolder: ShuffleStateHolder,
-        private val scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : MediaLibrarySession.Callback {
         companion object {
             const val ROOT_ID = "root"
