@@ -20,6 +20,7 @@ import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,6 +43,9 @@ class AutoLibraryCallback
             const val ALBUMS_ID = "albums"
             const val ARTISTS_ID = "artists"
         }
+
+        private var callbackJob = SupervisorJob(scope.coroutineContext[Job])
+        private val callbackScope get() = CoroutineScope(scope.coroutineContext + callbackJob)
 
         // ── Browse ──────────────────────────────────────────────────────────────
 
@@ -73,7 +77,7 @@ class AutoLibraryCallback
             params: LibraryParams?,
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
             val future = SettableFuture.create<LibraryResult<ImmutableList<MediaItem>>>()
-            scope.launch {
+            callbackScope.launch {
                 val items: List<MediaItem> =
                     when {
                         parentId == ROOT_ID -> buildRootCategories()
@@ -102,7 +106,7 @@ class AutoLibraryCallback
             mediaId: String,
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val future = SettableFuture.create<LibraryResult<MediaItem>>()
-            scope.launch {
+            callbackScope.launch {
                 val songId = parseSongId(mediaId)
                 val song = songId?.let { songRepository.getById(it) }
                 if (song != null) {
@@ -124,7 +128,7 @@ class AutoLibraryCallback
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
-            scope.launch {
+            callbackScope.launch {
                 try {
                     val requestedId = mediaItems.firstOrNull()?.mediaId
                     if (requestedId == null) {
@@ -219,7 +223,8 @@ class AutoLibraryCallback
         // ── Lifecycle ────────────────────────────────────────────────────────────
 
         fun release() {
-            scope.coroutineContext[Job]?.cancel()
+            callbackJob.cancel()
+            callbackJob = SupervisorJob(scope.coroutineContext[Job])
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────
