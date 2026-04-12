@@ -45,7 +45,7 @@ class AutoLibraryCallback
         }
 
         private var callbackJob = SupervisorJob(scope.coroutineContext[Job])
-        private val callbackScope get() = CoroutineScope(scope.coroutineContext + callbackJob)
+        private var callbackScope = CoroutineScope(scope.coroutineContext + callbackJob)
 
         // ── Browse ──────────────────────────────────────────────────────────────
 
@@ -78,24 +78,28 @@ class AutoLibraryCallback
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
             val future = SettableFuture.create<LibraryResult<ImmutableList<MediaItem>>>()
             callbackScope.launch {
-                val items: List<MediaItem> =
-                    when {
-                        parentId == ROOT_ID -> buildRootCategories()
-                        parentId == SONGS_ID -> buildAllSongItems()
-                        parentId == PLAYLISTS_ID -> buildPlaylistItems()
-                        parentId == ALBUMS_ID -> buildAlbumItems()
-                        parentId == ARTISTS_ID -> buildArtistItems()
-                        parentId.startsWith("playlist:") -> {
-                            val id = parentId.removePrefix("playlist:").toLongOrNull()
-                            if (id != null) buildPlaylistSongItems(parentId, id) else emptyList()
+                try {
+                    val items: List<MediaItem> =
+                        when {
+                            parentId == ROOT_ID -> buildRootCategories()
+                            parentId == SONGS_ID -> buildAllSongItems()
+                            parentId == PLAYLISTS_ID -> buildPlaylistItems()
+                            parentId == ALBUMS_ID -> buildAlbumItems()
+                            parentId == ARTISTS_ID -> buildArtistItems()
+                            parentId.startsWith("playlist:") -> {
+                                val id = parentId.removePrefix("playlist:").toLongOrNull()
+                                if (id != null) buildPlaylistSongItems(parentId, id) else emptyList()
+                            }
+                            parentId.startsWith("album:") ->
+                                buildAlbumSongItems(parentId, parentId.removePrefix("album:"))
+                            parentId.startsWith("artist:") ->
+                                buildArtistSongItems(parentId, parentId.removePrefix("artist:"))
+                            else -> emptyList()
                         }
-                        parentId.startsWith("album:") ->
-                            buildAlbumSongItems(parentId, parentId.removePrefix("album:"))
-                        parentId.startsWith("artist:") ->
-                            buildArtistSongItems(parentId, parentId.removePrefix("artist:"))
-                        else -> emptyList()
-                    }
-                future.set(LibraryResult.ofItemList(items, null))
+                    future.set(LibraryResult.ofItemList(items, null))
+                } catch (e: Exception) {
+                    future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_UNKNOWN))
+                }
             }
             return future
         }
@@ -107,12 +111,16 @@ class AutoLibraryCallback
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val future = SettableFuture.create<LibraryResult<MediaItem>>()
             callbackScope.launch {
-                val songId = parseSongId(mediaId)
-                val song = songId?.let { songRepository.getById(it) }
-                if (song != null) {
-                    future.set(LibraryResult.ofItem(song.toMediaItem(mediaId), null))
-                } else {
-                    future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_BAD_VALUE))
+                try {
+                    val songId = parseSongId(mediaId)
+                    val song = songId?.let { songRepository.getById(it) }
+                    if (song != null) {
+                        future.set(LibraryResult.ofItem(song.toMediaItem(mediaId), null))
+                    } else {
+                        future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_BAD_VALUE))
+                    }
+                } catch (e: Exception) {
+                    future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_UNKNOWN))
                 }
             }
             return future
@@ -225,6 +233,7 @@ class AutoLibraryCallback
         fun release() {
             callbackJob.cancel()
             callbackJob = SupervisorJob(scope.coroutineContext[Job])
+            callbackScope = CoroutineScope(scope.coroutineContext + callbackJob)
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────

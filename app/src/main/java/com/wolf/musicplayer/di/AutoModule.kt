@@ -11,7 +11,7 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Qualifier
-@Retention(AnnotationRetention.BINARY)
+@Retention(AnnotationRetention.RUNTIME)
 annotation class ApplicationScope
 
 @Module
