@@ -27,12 +27,12 @@ import javax.inject.Singleton
 class AutoLibraryCallback
     @Inject
     constructor(
-        internal val songRepository: SongRepository,
-        internal val playlistRepository: PlaylistRepository,
-        internal val playWeightRepository: PlayWeightRepository,
-        internal val shuffler: WeightedShuffler,
-        internal val shuffleStateHolder: ShuffleStateHolder,
-        internal val scope: CoroutineScope,
+        private val songRepository: SongRepository,
+        private val playlistRepository: PlaylistRepository,
+        private val playWeightRepository: PlayWeightRepository,
+        private val shuffler: WeightedShuffler,
+        private val shuffleStateHolder: ShuffleStateHolder,
+        private val scope: CoroutineScope,
     ) : MediaLibrarySession.Callback {
         companion object {
             const val ROOT_ID = "root"
@@ -124,42 +124,46 @@ class AutoLibraryCallback
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             scope.launch {
-                val requestedId = mediaItems.firstOrNull()?.mediaId
-                if (requestedId == null) {
-                    future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
-                    return@launch
-                }
-                val (songs, requestedSongId) = resolveQueue(requestedId)
-                if (songs.isEmpty()) {
-                    future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
-                    return@launch
-                }
-                val queue =
-                    if (shuffleStateHolder.shuffleEnabled) {
-                        val weights = songs.map { playWeightRepository.getWeight(it.id) }
-                        shuffler.permute(songs, weights)
-                    } else {
-                        songs
+                try {
+                    val requestedId = mediaItems.firstOrNull()?.mediaId
+                    if (requestedId == null) {
+                        future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
+                        return@launch
                     }
-                val idx = queue.indexOfFirst { it.id == requestedSongId }.coerceAtLeast(0)
-                val resolvedItems = queue.map { it.toMediaItem("song:${it.id}") }
-                future.set(MediaSession.MediaItemsWithStartPosition(resolvedItems, idx, startPositionMs))
+                    val (songs, requestedSongId) = resolveQueue(requestedId)
+                    if (songs.isEmpty() || requestedSongId == null) {
+                        future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
+                        return@launch
+                    }
+                    val queue =
+                        if (shuffleStateHolder.shuffleEnabled) {
+                            val weights = songs.map { playWeightRepository.getWeight(it.id) }
+                            shuffler.permute(songs, weights)
+                        } else {
+                            songs
+                        }
+                    val idx = queue.indexOfFirst { it.id == requestedSongId }.coerceAtLeast(0)
+                    val resolvedItems = queue.map { it.toMediaItem("song:${it.id}") }
+                    future.set(MediaSession.MediaItemsWithStartPosition(resolvedItems, idx, startPositionMs))
+                } catch (e: Exception) {
+                    future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
+                }
             }
             return future
         }
 
-        private suspend fun resolveQueue(mediaId: String): Pair<List<Song>, Long> {
+        private suspend fun resolveQueue(mediaId: String): Pair<List<Song>, Long?> {
             return when {
                 mediaId.startsWith("album:") -> {
                     val rest = mediaId.removePrefix("album:")
                     val slashIdx = rest.indexOf("/song:")
                     if (slashIdx < 0) {
-                        Pair(emptyList(), -1L)
+                        Pair(emptyList(), null)
                     } else {
                         val albumName = rest.substring(0, slashIdx)
                         val songId = rest.substring(slashIdx + 6).toLongOrNull()
                         if (songId == null) {
-                            Pair(emptyList(), -1L)
+                            Pair(emptyList(), null)
                         } else {
                             Pair(songRepository.getByAlbum(albumName), songId)
                         }
@@ -169,12 +173,12 @@ class AutoLibraryCallback
                     val rest = mediaId.removePrefix("artist:")
                     val slashIdx = rest.indexOf("/song:")
                     if (slashIdx < 0) {
-                        Pair(emptyList(), -1L)
+                        Pair(emptyList(), null)
                     } else {
                         val artistName = rest.substring(0, slashIdx)
                         val songId = rest.substring(slashIdx + 6).toLongOrNull()
                         if (songId == null) {
-                            Pair(emptyList(), -1L)
+                            Pair(emptyList(), null)
                         } else {
                             Pair(songRepository.getByArtist(artistName), songId)
                         }
@@ -184,15 +188,15 @@ class AutoLibraryCallback
                     val rest = mediaId.removePrefix("playlist:")
                     val slashIdx = rest.indexOf("/song:")
                     if (slashIdx < 0) {
-                        Pair(emptyList(), -1L)
+                        Pair(emptyList(), null)
                     } else {
                         val playlistId = rest.substring(0, slashIdx).toLongOrNull()
                         if (playlistId == null) {
-                            Pair(emptyList(), -1L)
+                            Pair(emptyList(), null)
                         } else {
                             val songId = rest.substring(slashIdx + 6).toLongOrNull()
                             if (songId == null) {
-                                Pair(emptyList(), -1L)
+                                Pair(emptyList(), null)
                             } else {
                                 Pair(playlistRepository.getSongsForPlaylist(playlistId), songId)
                             }
@@ -202,12 +206,12 @@ class AutoLibraryCallback
                 mediaId.startsWith("song:") -> {
                     val songId = mediaId.removePrefix("song:").toLongOrNull()
                     if (songId == null) {
-                        Pair(emptyList(), -1L)
+                        Pair(emptyList(), null)
                     } else {
                         Pair(songRepository.getAll(), songId)
                     }
                 }
-                else -> Pair(emptyList(), -1L)
+                else -> Pair(emptyList(), null)
             }
         }
 
