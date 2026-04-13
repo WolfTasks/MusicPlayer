@@ -1,5 +1,6 @@
 package com.wolf.musicplayer.service
 
+import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.LibraryResult
@@ -18,6 +19,7 @@ import com.wolf.musicplayer.di.ApplicationScope
 import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Song
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +31,7 @@ import javax.inject.Singleton
 class AutoLibraryCallback
     @Inject
     constructor(
+        @ApplicationContext private val context: Context,
         private val songRepository: SongRepository,
         private val playlistRepository: PlaylistRepository,
         private val playWeightRepository: PlayWeightRepository,
@@ -135,6 +138,13 @@ class AutoLibraryCallback
             startIndex: Int,
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            // In-app controller (PlayerViewModel): queue already built; pass through unchanged.
+            if (controller.packageName == context.packageName) {
+                return Futures.immediateFuture(
+                    MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs),
+                )
+            }
+            // Android Auto: resolve the single browse-tree mediaId into a full queue.
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             callbackScope.launch {
                 try {

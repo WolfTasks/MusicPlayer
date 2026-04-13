@@ -1,5 +1,6 @@
 package com.wolf.musicplayer
 
+import android.content.Context
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
@@ -13,6 +14,7 @@ import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.domain.model.SourceType
 import com.wolf.musicplayer.service.AutoLibraryCallback
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -30,6 +32,7 @@ class AutoLibraryCallbackTest {
     private lateinit var testScope: TestScope
     private lateinit var callback: AutoLibraryCallback
 
+    private val mockContext = mockk<Context>(relaxed = true)
     private val mockSession = mockk<MediaLibrarySession>(relaxed = true)
     private val mockBrowser = mockk<MediaSession.ControllerInfo>(relaxed = true)
 
@@ -52,8 +55,10 @@ class AutoLibraryCallbackTest {
         playWeightRepo = mockk(relaxed = true)
         shuffleStateHolder = ShuffleStateHolder()
         testScope = TestScope()
+        every { mockContext.packageName } returns "com.wolf.musicplayer"
         callback =
             AutoLibraryCallback(
+                context = mockContext,
                 songRepository = songRepo,
                 playlistRepository = playlistRepo,
                 playWeightRepository = playWeightRepo,
@@ -259,7 +264,10 @@ class AutoLibraryCallbackTest {
     // --- onSetMediaItems ---
 
     private val mockMediaSession = mockk<MediaSession>(relaxed = true)
-    private val mockController = mockk<MediaSession.ControllerInfo>(relaxed = true)
+    private val mockController =
+        mockk<MediaSession.ControllerInfo>(relaxed = true) {
+            every { packageName } returns "com.google.android.projection.gearhead"
+        }
 
     private fun mediaItemWithId(mediaId: String): androidx.media3.common.MediaItem =
         androidx.media3.common.MediaItem.Builder().setMediaId(mediaId).build()
@@ -392,5 +400,43 @@ class AutoLibraryCallbackTest {
             assertEquals("song:2", result.mediaItems[1].mediaId)
             assertEquals("song:3", result.mediaItems[2].mediaId)
             assertEquals(0, result.startIndex)
+        }
+
+    @Test
+    fun `onSetMediaItems from in-app controller passes items through unchanged`() =
+        runTest {
+            // Simulate PlayerViewModel: plain song IDs, URIs already set, no "song:" prefix
+            val inAppController =
+                mockk<MediaSession.ControllerInfo>(relaxed = true) {
+                    every { packageName } returns "com.wolf.musicplayer"
+                }
+            val item1 =
+                androidx.media3.common.MediaItem.Builder()
+                    .setMediaId("1")
+                    .setUri("/music/1.mp3")
+                    .build()
+            val item2 =
+                androidx.media3.common.MediaItem.Builder()
+                    .setMediaId("2")
+                    .setUri("/music/2.mp3")
+                    .build()
+
+            val future =
+                callback.onSetMediaItems(
+                    mockMediaSession,
+                    inAppController,
+                    listOf(item1, item2),
+                    1,
+                    30_000L,
+                )
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            // Items returned unchanged — no DB lookup, same IDs and count
+            assertEquals(2, result.mediaItems.size)
+            assertEquals("1", result.mediaItems[0].mediaId)
+            assertEquals("2", result.mediaItems[1].mediaId)
+            assertEquals(1, result.startIndex)
+            assertEquals(30_000L, result.startPositionMs)
         }
 }
