@@ -1,6 +1,7 @@
 package com.wolf.musicplayer
 
 import android.content.Context
+import android.net.Uri
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
@@ -21,6 +22,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -413,12 +415,12 @@ class AutoLibraryCallbackTest {
             val item1 =
                 androidx.media3.common.MediaItem.Builder()
                     .setMediaId("1")
-                    .setUri("/music/1.mp3")
+                    .setUri(Uri.parse("/music/1.mp3"))
                     .build()
             val item2 =
                 androidx.media3.common.MediaItem.Builder()
                     .setMediaId("2")
-                    .setUri("/music/2.mp3")
+                    .setUri(Uri.parse("/music/2.mp3"))
                     .build()
 
             val future =
@@ -438,5 +440,9 @@ class AutoLibraryCallbackTest {
             assertEquals("2", result.mediaItems[1].mediaId)
             assertEquals(1, result.startIndex)
             assertEquals(30_000L, result.startPositionMs)
+            // Assert URIs are preserved — items must be the exact same objects
+            // This proves URIs (and all other fields) are intact, not rebuilt from mediaId alone
+            assertTrue("Item 0 URI preserved", result.mediaItems[0] === item1)
+            assertTrue("Item 1 URI preserved", result.mediaItems[1] === item2)
         }
 }
