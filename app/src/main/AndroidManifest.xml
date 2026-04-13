@@ -18,6 +18,10 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.MusicPlayer">
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <activity
                 android:name=".MainActivity"
                 android:exported="true"
@@ -39,9 +43,6 @@
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
-            <meta-data
-                android:name="com.google.android.gms.car.application"
-                android:resource="@xml/automotive_app_desc" />
         </service>
     </application>
 
