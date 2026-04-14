@@ -19,12 +19,14 @@ class MusicService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         mediaLibrarySession = MediaLibrarySession.Builder(this, player, autoLibraryCallback).build()
+        addSession(mediaLibrarySession!!)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaLibrarySession
 
     override fun onDestroy() {
         mediaLibrarySession?.run {
+            removeSession(this)
             player.release()
             release()
             mediaLibrarySession = null
