@@ -164,7 +164,7 @@ class AutoLibraryCallback
                     val items = queue.map { it.toMediaItem("song:${it.id}") }
                     future.set(MediaSession.MediaItemsWithStartPosition(items, 0, 0L))
                 } catch (e: Exception) {
-                    future.setException(e)
+                    future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
                 }
             }
             return future
