@@ -445,4 +445,20 @@ class AutoLibraryCallbackTest {
             assertTrue("Item 0 URI preserved", result.mediaItems[0] === item1)
             assertTrue("Item 1 URI preserved", result.mediaItems[1] === item2)
         }
+
+    // --- onSubscribe / onUnsubscribe ---
+
+    @Test
+    fun `onSubscribe returns success for any parentId`() =
+        runTest {
+            val future = callback.onSubscribe(mockSession, mockBrowser, "songs", null)
+            assertEquals(0, future.get().resultCode)
+        }
+
+    @Test
+    fun `onUnsubscribe returns success for any parentId`() =
+        runTest {
+            val future = callback.onUnsubscribe(mockSession, mockBrowser, "songs")
+            assertEquals(0, future.get().resultCode)
+        }
 }

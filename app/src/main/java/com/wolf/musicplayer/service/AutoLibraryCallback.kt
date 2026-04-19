@@ -129,6 +129,21 @@ class AutoLibraryCallback
             return future
         }
 
+        // ── Subscription ────────────────────────────────────────────────────────────
+
+        override fun onSubscribe(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<Void>> = Futures.immediateFuture(LibraryResult.ofVoid())
+
+        override fun onUnsubscribe(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+        ): ListenableFuture<LibraryResult<Void>> = Futures.immediateFuture(LibraryResult.ofVoid())
+
         // ── Playback ────────────────────────────────────────────────────────────
 
         override fun onSetMediaItems(
