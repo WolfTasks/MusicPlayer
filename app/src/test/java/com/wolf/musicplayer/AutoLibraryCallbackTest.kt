@@ -495,4 +495,17 @@ class AutoLibraryCallbackTest {
             assertEquals(10, result.mediaItems.size)
             assertEquals(0, result.startIndex)
         }
+
+    @Test
+    fun `onPlaybackResumption returns empty list when repository throws`() =
+        runTest {
+            coEvery { songRepo.getAll() } throws RuntimeException("DB failure")
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(0, result.mediaItems.size)
+            assertEquals(0, result.startIndex)
+        }
 }
