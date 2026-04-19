@@ -146,6 +146,30 @@ class AutoLibraryCallback
 
         // ── Playback ────────────────────────────────────────────────────────────
 
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+            callbackScope.launch {
+                try {
+                    val songs = songRepository.getAll()
+                    val queue =
+                        if (shuffleStateHolder.shuffleEnabled) {
+                            val weights = songs.map { playWeightRepository.getWeight(it.id) }
+                            shuffler.permute(songs, weights)
+                        } else {
+                            songs
+                        }
+                    val items = queue.map { it.toMediaItem("song:${it.id}") }
+                    future.set(MediaSession.MediaItemsWithStartPosition(items, 0, 0L))
+                } catch (e: Exception) {
+                    future.setException(e)
+                }
+            }
+            return future
+        }
+
         override fun onSetMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,

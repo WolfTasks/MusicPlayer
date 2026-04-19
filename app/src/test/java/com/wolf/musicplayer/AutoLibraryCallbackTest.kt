@@ -461,4 +461,38 @@ class AutoLibraryCallbackTest {
             val future = callback.onUnsubscribe(mockSession, mockBrowser, "songs")
             assertEquals(0, future.get().resultCode)
         }
+
+    // --- onPlaybackResumption ---
+
+    @Test
+    fun `onPlaybackResumption returns all songs at index 0`() =
+        runTest {
+            coEvery { songRepo.getAll() } returns listOf(song(1), song(2), song(3))
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(0, result.startIndex)
+            assertEquals("song:1", result.mediaItems[0].mediaId)
+            assertEquals("song:2", result.mediaItems[1].mediaId)
+            assertEquals("song:3", result.mediaItems[2].mediaId)
+        }
+
+    @Test
+    fun `onPlaybackResumption with shuffle enabled returns all songs with index 0`() =
+        runTest {
+            shuffleStateHolder.setShuffleEnabled(true)
+            val songs = (1L..10L).map { song(it) }
+            coEvery { songRepo.getAll() } returns songs
+            coEvery { playWeightRepo.getWeight(any()) } returns 1.0f
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(10, result.mediaItems.size)
+            assertEquals(0, result.startIndex)
+        }
 }
