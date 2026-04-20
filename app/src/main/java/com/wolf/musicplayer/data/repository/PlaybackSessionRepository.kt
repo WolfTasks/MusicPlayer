@@ -34,6 +34,7 @@ class PlaybackSessionRepository
                 when (type) {
                     "ALL" -> QueueContext.AllSongs
                     "PLAYLIST" -> QueueContext.PlaylistCtx(id.toLongOrNull() ?: return null)
+                    // Names are used as keys and may not survive a media rescan/tag edit — fallback handled by caller
                     "ALBUM" -> QueueContext.AlbumCtx(id)
                     "ARTIST" -> QueueContext.ArtistCtx(id)
                     else -> return null

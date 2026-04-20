@@ -300,6 +300,9 @@ class PlayerViewModel
                             .build()
                     }
                 currentSongId = null
+                activeQueue.getOrNull(newIndex)?.let { song ->
+                    playbackSessionRepository.save(currentQueueContext, song.id)
+                }
                 ctrl.setMediaItems(items, newIndex, position)
                 ctrl.prepare()
                 if (wasPlaying) ctrl.play()
