@@ -10,11 +10,13 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
+import com.wolf.musicplayer.data.repository.PlaybackSessionRepository
 import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
 import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Playlist
+import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.service.MusicService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +58,7 @@ class PlayerViewModel
         private val shuffler: WeightedShuffler,
         private val playlistRepo: PlaylistRepository,
         private val shuffleStateHolder: ShuffleStateHolder,
+        private val playbackSessionRepository: PlaybackSessionRepository,
     ) : ViewModel() {
         private val _state = MutableStateFlow(PlayerState())
         val state: StateFlow<PlayerState> = _state.asStateFlow()
@@ -104,6 +107,7 @@ class PlayerViewModel
         private var activeQueue: List<Song> = emptyList()
         private var currentSongId: Long? = null
         private var playbackStartPosition: Long = 0L
+        private var currentQueueContext: QueueContext = QueueContext.AllSongs
         private var positionTracker: Job? = null
 
         init {
@@ -135,6 +139,12 @@ class PlayerViewModel
                     if (wasManualSkip) {
                         currentSongId?.let { id ->
                             viewModelScope.launch { playWeightRepository.recordSkip(id) }
+                        }
+                    }
+                    val newIdx = controller?.currentMediaItemIndex ?: return
+                    activeQueue.getOrNull(newIdx)?.let { song ->
+                        viewModelScope.launch {
+                            playbackSessionRepository.save(currentQueueContext, song.id)
                         }
                     }
                     syncStateFromController()
@@ -209,9 +219,11 @@ class PlayerViewModel
         fun playSongs(
             songs: List<Song>,
             startIndex: Int = 0,
+            queueContext: QueueContext = QueueContext.AllSongs,
         ) {
             val ctrl = controller ?: return
             currentQueue = songs
+            currentQueueContext = queueContext
             viewModelScope.launch {
                 activeQueue =
                     if (_state.value.shuffleEnabled) {
@@ -234,6 +246,10 @@ class PlayerViewModel
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
+                // Save before setMediaItems so cold-start resumption sees the session even if the process is killed during prepare
+                activeQueue.getOrNull(activeIndex)?.let { song ->
+                    playbackSessionRepository.save(queueContext, song.id)
+                }
                 currentSongId = null
                 ctrl.setMediaItems(items, activeIndex, 0L)
                 ctrl.prepare()
