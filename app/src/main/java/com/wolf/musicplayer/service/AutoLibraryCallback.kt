@@ -13,11 +13,13 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
+import com.wolf.musicplayer.data.repository.PlaybackSessionRepository
 import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
 import com.wolf.musicplayer.di.ApplicationScope
 import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
+import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +39,7 @@ class AutoLibraryCallback
         private val playWeightRepository: PlayWeightRepository,
         private val shuffler: WeightedShuffler,
         private val shuffleStateHolder: ShuffleStateHolder,
+        private val playbackSessionRepository: PlaybackSessionRepository,
         @ApplicationScope private val scope: CoroutineScope,
     ) : MediaLibrarySession.Callback {
         companion object {
@@ -153,16 +156,37 @@ class AutoLibraryCallback
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             callbackScope.launch {
                 try {
-                    val songs = songRepository.getAll()
+                    val savedSession = playbackSessionRepository.load()
+                    val rawSongs =
+                        if (savedSession != null) {
+                            val (ctx, _) = savedSession
+                            val ctxSongs =
+                                when (ctx) {
+                                    is QueueContext.AllSongs -> songRepository.getAll()
+                                    is QueueContext.PlaylistCtx -> playlistRepository.getSongsForPlaylist(ctx.id)
+                                    is QueueContext.AlbumCtx -> songRepository.getByAlbum(ctx.name)
+                                    is QueueContext.ArtistCtx -> songRepository.getByArtist(ctx.name)
+                                }
+                            // context exists but has no songs (e.g. deleted playlist) — fall back to full library
+                            ctxSongs.ifEmpty { songRepository.getAll() }
+                        } else {
+                            songRepository.getAll()
+                        }
                     val queue =
                         if (shuffleStateHolder.shuffleEnabled) {
-                            val weights = songs.map { playWeightRepository.getWeight(it.id) }
-                            shuffler.permute(songs, weights)
+                            val weights = rawSongs.map { playWeightRepository.getWeight(it.id) }
+                            shuffler.permute(rawSongs, weights)
                         } else {
-                            songs
+                            rawSongs
+                        }
+                    val startIndex =
+                        if (savedSession != null) {
+                            queue.indexOfFirst { it.id == savedSession.second }.coerceAtLeast(0)
+                        } else {
+                            0
                         }
                     val items = queue.map { it.toMediaItem("song:${it.id}") }
-                    future.set(MediaSession.MediaItemsWithStartPosition(items, 0, 0L))
+                    future.set(MediaSession.MediaItemsWithStartPosition(items, startIndex, 0L))
                 } catch (e: Exception) {
                     future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
                 }

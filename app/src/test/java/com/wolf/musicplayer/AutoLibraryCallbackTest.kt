@@ -6,11 +6,13 @@ import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import com.wolf.musicplayer.data.repository.PlayWeightRepository
+import com.wolf.musicplayer.data.repository.PlaybackSessionRepository
 import com.wolf.musicplayer.data.repository.PlaylistRepository
 import com.wolf.musicplayer.data.repository.SongRepository
 import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.Playlist
+import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.domain.model.SourceType
 import com.wolf.musicplayer.service.AutoLibraryCallback
@@ -32,6 +34,7 @@ class AutoLibraryCallbackTest {
     private lateinit var playWeightRepo: PlayWeightRepository
     private lateinit var shuffleStateHolder: ShuffleStateHolder
     private lateinit var testScope: TestScope
+    private lateinit var playbackSessionRepo: PlaybackSessionRepository
     private lateinit var callback: AutoLibraryCallback
 
     private val mockContext = mockk<Context>(relaxed = true)
@@ -58,6 +61,8 @@ class AutoLibraryCallbackTest {
         shuffleStateHolder = ShuffleStateHolder()
         testScope = TestScope()
         every { mockContext.packageName } returns "com.wolf.musicplayer"
+        playbackSessionRepo = mockk(relaxed = true)
+        every { playbackSessionRepo.load() } returns null
         callback =
             AutoLibraryCallback(
                 context = mockContext,
@@ -66,6 +71,7 @@ class AutoLibraryCallbackTest {
                 playWeightRepository = playWeightRepo,
                 shuffler = WeightedShuffler(),
                 shuffleStateHolder = shuffleStateHolder,
+                playbackSessionRepository = playbackSessionRepo,
                 scope = testScope,
             )
     }
@@ -506,6 +512,103 @@ class AutoLibraryCallbackTest {
             val result = future.get()
 
             assertEquals(0, result.mediaItems.size)
+            assertEquals(0, result.startIndex)
+        }
+
+    // --- onPlaybackResumption: session-aware restore ---
+
+    @Test
+    fun `onPlaybackResumption with AllSongs session restores library at last song`() =
+        runTest {
+            val songs = listOf(song(1), song(2), song(3))
+            coEvery { songRepo.getAll() } returns songs
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.AllSongs, 2L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:2 is at index 1
+            assertEquals("song:2", result.mediaItems[1].mediaId)
+            assertEquals(0L, result.startPositionMs)
+        }
+
+    @Test
+    fun `onPlaybackResumption with playlist session restores playlist queue at last song`() =
+        runTest {
+            val songs = listOf(song(10), song(11), song(12))
+            coEvery { playlistRepo.getSongsForPlaylist(3L) } returns songs
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.PlaylistCtx(3L), 11L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:11 at index 1
+            assertEquals("song:11", result.mediaItems[1].mediaId)
+            assertEquals(0L, result.startPositionMs)
+        }
+
+    @Test
+    fun `onPlaybackResumption with album session restores album queue at last song`() =
+        runTest {
+            val songs = listOf(song(20), song(21), song(22))
+            coEvery { songRepo.getByAlbum("Abbey Road") } returns songs
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.AlbumCtx("Abbey Road"), 22L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(3, result.mediaItems.size)
+            assertEquals(2, result.startIndex) // song:22 at index 2
+            assertEquals("song:22", result.mediaItems[2].mediaId)
+        }
+
+    @Test
+    fun `onPlaybackResumption with artist session restores artist queue at last song`() =
+        runTest {
+            val songs = listOf(song(30), song(31))
+            coEvery { songRepo.getByArtist("The Beatles") } returns songs
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.ArtistCtx("The Beatles"), 31L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(2, result.mediaItems.size)
+            assertEquals(1, result.startIndex) // song:31 at index 1
+        }
+
+    @Test
+    fun `onPlaybackResumption falls back to index 0 when session song not found in context`() =
+        runTest {
+            // song:999 does not exist in album — coerceAtLeast(0) kicks in
+            coEvery { songRepo.getByAlbum("Abbey Road") } returns listOf(song(20), song(21))
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.AlbumCtx("Abbey Road"), 999L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(2, result.mediaItems.size)
+            assertEquals(0, result.startIndex)
+        }
+
+    @Test
+    fun `onPlaybackResumption falls back to full library when saved playlist is empty`() =
+        runTest {
+            coEvery { playlistRepo.getSongsForPlaylist(99L) } returns emptyList()
+            coEvery { songRepo.getAll() } returns listOf(song(1), song(2))
+            every { playbackSessionRepo.load() } returns Pair(QueueContext.PlaylistCtx(99L), 1L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(2, result.mediaItems.size) // fell back to full library
             assertEquals(0, result.startIndex)
         }
 }
