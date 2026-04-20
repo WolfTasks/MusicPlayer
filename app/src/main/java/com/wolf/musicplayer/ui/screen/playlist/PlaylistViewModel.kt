@@ -38,11 +38,11 @@ class PlaylistViewModel
 
         fun playPlaylist(
             playlistId: Long,
-            onSongsReady: (List<Song>) -> Unit,
+            onSongsReady: (List<Song>, Long) -> Unit,
         ) {
             viewModelScope.launch {
                 val songs = repo.getSongsForPlaylist(playlistId)
-                if (songs.isNotEmpty()) onSongsReady(songs)
+                if (songs.isNotEmpty()) onSongsReady(songs, playlistId)
             }
         }
     }

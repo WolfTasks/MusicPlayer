@@ -57,11 +57,16 @@ class PlaylistViewModelTest {
             coEvery { repo.getSongsForPlaylist(5L) } returns listOf(song)
 
             var received: List<Song>? = null
-            vm.playPlaylist(5L) { received = it }
+            var receivedId: Long? = null
+            vm.playPlaylist(5L) { songs, id ->
+                received = songs
+                receivedId = id
+            }
             testDispatcher.scheduler.advanceUntilIdle()
 
             coVerify { repo.getSongsForPlaylist(5L) }
             assertEquals(listOf(song), received)
+            assertEquals(5L, receivedId)
         }
 
     @Test
@@ -72,7 +77,7 @@ class PlaylistViewModelTest {
             coEvery { repo.getSongsForPlaylist(5L) } returns emptyList()
 
             var called = false
-            vm.playPlaylist(5L) { called = true }
+            vm.playPlaylist(5L) { _, _ -> called = true }
             testDispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(false, called)

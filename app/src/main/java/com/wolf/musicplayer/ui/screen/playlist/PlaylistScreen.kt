@@ -46,7 +46,7 @@ import com.wolf.musicplayer.domain.model.Song
 fun PlaylistScreen(
     contentPadding: PaddingValues,
     onPlaylistClick: (Long) -> Unit,
-    onPlaySongs: (List<Song>) -> Unit,
+    onPlaySongs: (List<Song>, Long) -> Unit,
     viewModel: PlaylistViewModel = hiltViewModel(),
 ) {
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()

@@ -25,6 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.ui.component.AddToPlaylistSheet
 import com.wolf.musicplayer.ui.screen.album.AlbumDetailScreen
@@ -111,8 +112,8 @@ fun AppNavigation() {
                     onPlaylistClick = { playlistId ->
                         navController.navigate("playlists/$playlistId")
                     },
-                    onPlaySongs = { songs ->
-                        playerViewModel.playSongs(songs, 0)
+                    onPlaySongs = { songs, playlistId ->
+                        playerViewModel.playSongs(songs, 0, QueueContext.PlaylistCtx(playlistId))
                         navController.navigate(Screen.Player.route)
                     },
                 )
