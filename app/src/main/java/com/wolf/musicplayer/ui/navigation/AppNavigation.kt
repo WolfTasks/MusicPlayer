@@ -100,7 +100,7 @@ fun AppNavigation() {
                 LibraryScreen(
                     contentPadding = innerPadding,
                     onSongClick = { songs, index ->
-                        playerViewModel.playSongs(songs, index)
+                        playerViewModel.playSongs(songs, index, QueueContext.AllSongs)
                         navController.navigate(Screen.Player.route)
                     },
                     onMoreClick = onMoreClick,
@@ -126,7 +126,8 @@ fun AppNavigation() {
                     contentPadding = innerPadding,
                     onBack = { navController.popBackStack() },
                     onSongClick = { songs, index ->
-                        playerViewModel.playSongs(songs, index)
+                        val playlistId = it.arguments?.getLong("playlistId") ?: 0L
+                        playerViewModel.playSongs(songs, index, QueueContext.PlaylistCtx(playlistId))
                         navController.navigate(Screen.Player.route)
                     },
                     onMoreClick = onMoreClick,
@@ -148,7 +149,8 @@ fun AppNavigation() {
                     contentPadding = innerPadding,
                     onBack = { navController.popBackStack() },
                     onSongClick = { songs, index ->
-                        playerViewModel.playSongs(songs, index)
+                        val artistName = it.arguments?.getString("artistName") ?: ""
+                        playerViewModel.playSongs(songs, index, QueueContext.ArtistCtx(artistName))
                         navController.navigate(Screen.Player.route)
                     },
                     onMoreClick = onMoreClick,
@@ -170,7 +172,8 @@ fun AppNavigation() {
                     contentPadding = innerPadding,
                     onBack = { navController.popBackStack() },
                     onSongClick = { songs, index ->
-                        playerViewModel.playSongs(songs, index)
+                        val albumName = it.arguments?.getString("albumName") ?: ""
+                        playerViewModel.playSongs(songs, index, QueueContext.AlbumCtx(albumName))
                         navController.navigate(Screen.Player.route)
                     },
                     onMoreClick = onMoreClick,
