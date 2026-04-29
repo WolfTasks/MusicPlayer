@@ -522,7 +522,7 @@ class AutoLibraryCallbackTest {
         runTest {
             val songs = listOf(song(1), song(2), song(3))
             coEvery { songRepo.getAll() } returns songs
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.AllSongs, 2L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.AllSongs, 2L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()
@@ -539,7 +539,7 @@ class AutoLibraryCallbackTest {
         runTest {
             val songs = listOf(song(10), song(11), song(12))
             coEvery { playlistRepo.getSongsForPlaylist(3L) } returns songs
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.PlaylistCtx(3L), 11L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.PlaylistCtx(3L), 11L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()
@@ -556,7 +556,7 @@ class AutoLibraryCallbackTest {
         runTest {
             val songs = listOf(song(20), song(21), song(22))
             coEvery { songRepo.getByAlbum("Abbey Road") } returns songs
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.AlbumCtx("Abbey Road"), 22L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.AlbumCtx("Abbey Road"), 22L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()
@@ -572,7 +572,7 @@ class AutoLibraryCallbackTest {
         runTest {
             val songs = listOf(song(30), song(31))
             coEvery { songRepo.getByArtist("The Beatles") } returns songs
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.ArtistCtx("The Beatles"), 31L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.ArtistCtx("The Beatles"), 31L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()
@@ -587,7 +587,7 @@ class AutoLibraryCallbackTest {
         runTest {
             // song:999 does not exist in album — coerceAtLeast(0) kicks in
             coEvery { songRepo.getByAlbum("Abbey Road") } returns listOf(song(20), song(21))
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.AlbumCtx("Abbey Road"), 999L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.AlbumCtx("Abbey Road"), 999L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()
@@ -602,7 +602,7 @@ class AutoLibraryCallbackTest {
         runTest {
             coEvery { playlistRepo.getSongsForPlaylist(99L) } returns emptyList()
             coEvery { songRepo.getAll() } returns listOf(song(1), song(2))
-            every { playbackSessionRepo.load() } returns Pair(QueueContext.PlaylistCtx(99L), 1L)
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.PlaylistCtx(99L), 1L, 0L)
 
             val future = callback.onPlaybackResumption(mockMediaSession, mockController)
             testScope.advanceUntilIdle()

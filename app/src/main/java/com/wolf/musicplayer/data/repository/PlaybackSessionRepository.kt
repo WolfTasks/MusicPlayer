@@ -17,19 +17,22 @@ class PlaybackSessionRepository
         fun save(
             queueContext: QueueContext,
             songId: Long,
+            positionMs: Long = 0L,
         ) {
             prefs.edit()
                 .putString("context_type", queueContext.toTypeString())
                 .putString("context_id", queueContext.toIdString())
                 .putLong("last_song_id", songId)
+                .putLong("position_ms", positionMs)
                 .apply()
         }
 
-        fun load(): Pair<QueueContext, Long>? {
+        fun load(): Triple<QueueContext, Long, Long>? {
             val type = prefs.getString("context_type", null) ?: return null
             val id = prefs.getString("context_id", null) ?: ""
             val songId = prefs.getLong("last_song_id", -1L)
             if (songId == -1L) return null
+            val positionMs = prefs.getLong("position_ms", 0L)
             val ctx =
                 when (type) {
                     "ALL" -> QueueContext.AllSongs
@@ -39,7 +42,7 @@ class PlaybackSessionRepository
                     "ARTIST" -> QueueContext.ArtistCtx(id)
                     else -> return null
                 }
-            return Pair(ctx, songId)
+            return Triple(ctx, songId, positionMs)
         }
 
         private fun QueueContext.toTypeString() =
