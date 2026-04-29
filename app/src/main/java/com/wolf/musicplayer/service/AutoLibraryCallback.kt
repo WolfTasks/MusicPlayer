@@ -370,13 +370,6 @@ class AutoLibraryCallback
                         .build(),
                 )
                 .build()
-
-        internal fun parseSongId(mediaId: String): Long? =
-            when {
-                mediaId.startsWith("song:") -> mediaId.removePrefix("song:").toLongOrNull()
-                mediaId.contains("/song:") -> mediaId.substringAfterLast("/song:").toLongOrNull()
-                else -> null
-            }
     }
 
 internal fun Song.toMediaItem(mediaId: String): MediaItem =
@@ -394,3 +387,10 @@ internal fun Song.toMediaItem(mediaId: String): MediaItem =
                 .build(),
         )
         .build()
+
+internal fun parseSongId(mediaId: String): Long? =
+    when {
+        mediaId.startsWith("song:") -> mediaId.removePrefix("song:").toLongOrNull()
+        mediaId.contains("/song:") -> mediaId.substringAfterLast("/song:").toLongOrNull()
+        else -> null
+    }
