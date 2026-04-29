@@ -109,6 +109,7 @@ class PlayerViewModel
         private var playbackStartPosition: Long = 0L
         private var currentQueueContext: QueueContext = QueueContext.AllSongs
         private var positionTracker: Job? = null
+        private var positionSaveCounter = 0
 
         init {
             connectToService()
@@ -128,7 +129,20 @@ class PlayerViewModel
             object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     _state.update { it.copy(isPlaying = isPlaying) }
-                    if (isPlaying) startPositionTracking() else stopPositionTracking()
+                    if (isPlaying) {
+                        startPositionTracking()
+                    } else {
+                        stopPositionTracking()
+                        currentSongId?.let { id ->
+                            viewModelScope.launch {
+                                playbackSessionRepository.save(
+                                    currentQueueContext,
+                                    id,
+                                    controller?.currentPosition ?: _state.value.position,
+                                )
+                            }
+                        }
+                    }
                 }
 
                 override fun onMediaItemTransition(
@@ -182,12 +196,21 @@ class PlayerViewModel
             positionTracker?.cancel()
             positionTracker =
                 viewModelScope.launch {
+                    positionSaveCounter = 0
                     while (isActive) {
+                        val pos = controller?.currentPosition ?: _state.value.position
                         _state.update { s ->
                             s.copy(
-                                position = controller?.currentPosition ?: s.position,
+                                position = pos,
                                 duration = controller?.duration?.coerceAtLeast(0L) ?: s.duration,
                             )
+                        }
+                        positionSaveCounter++
+                        if (positionSaveCounter >= 20) {
+                            positionSaveCounter = 0
+                            currentSongId?.let { id ->
+                                playbackSessionRepository.save(currentQueueContext, id, pos)
+                            }
                         }
                         delay(500)
                     }
@@ -301,7 +324,7 @@ class PlayerViewModel
                     }
                 currentSongId = null
                 activeQueue.getOrNull(newIndex)?.let { song ->
-                    playbackSessionRepository.save(currentQueueContext, song.id)
+                    playbackSessionRepository.save(currentQueueContext, song.id, position)
                 }
                 ctrl.setMediaItems(items, newIndex, position)
                 ctrl.prepare()
