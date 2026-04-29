@@ -48,6 +48,9 @@ interface SongDao {
     @Query("SELECT DISTINCT album FROM songs ORDER BY album ASC")
     suspend fun getAlbums(): List<String>
 
+    @Query("SELECT * FROM songs WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<SongEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(songs: List<SongEntity>)
 

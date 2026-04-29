@@ -25,6 +25,7 @@ class PlaybackSessionRepositoryTest {
         every { mockPrefs.edit() } returns mockEditor
         every { mockEditor.putString(any(), any()) } returns mockEditor
         every { mockEditor.putLong(any(), any()) } returns mockEditor
+        every { mockPrefs.getLong("position_ms", 0L) } returns 0L
         repo = PlaybackSessionRepository(mockContext)
     }
 
@@ -51,6 +52,7 @@ class PlaybackSessionRepositoryTest {
         val result = repo.load()
         assertEquals(QueueContext.AllSongs, result?.first)
         assertEquals(42L, result?.second)
+        assertEquals(0L, result?.third)
     }
 
     @Test
@@ -62,6 +64,7 @@ class PlaybackSessionRepositoryTest {
         val result = repo.load()
         assertEquals(QueueContext.PlaylistCtx(7L), result?.first)
         assertEquals(99L, result?.second)
+        assertEquals(0L, result?.third)
     }
 
     @Test
@@ -73,6 +76,7 @@ class PlaybackSessionRepositoryTest {
         val result = repo.load()
         assertEquals(QueueContext.AlbumCtx("Abbey Road"), result?.first)
         assertEquals(5L, result?.second)
+        assertEquals(0L, result?.third)
     }
 
     @Test
@@ -84,23 +88,48 @@ class PlaybackSessionRepositoryTest {
         val result = repo.load()
         assertEquals(QueueContext.ArtistCtx("The Beatles"), result?.first)
         assertEquals(3L, result?.second)
+        assertEquals(0L, result?.third)
     }
 
     @Test
-    fun `save AllSongs writes correct type, empty id, and song id`() {
+    fun `load returns saved positionMs`() {
+        every { mockPrefs.getString("context_type", null) } returns "ALL"
+        every { mockPrefs.getString("context_id", null) } returns ""
+        every { mockPrefs.getLong("last_song_id", -1L) } returns 10L
+        every { mockPrefs.getLong("position_ms", 0L) } returns 45_000L
+
+        val result = repo.load()
+        assertEquals(45_000L, result?.third)
+    }
+
+    @Test
+    fun `save AllSongs writes correct type, empty id, song id, and position`() {
         val typeSlot = slot<String>()
         val idSlot = slot<String>()
         val songIdSlot = slot<Long>()
+        val positionSlot = slot<Long>()
         every { mockEditor.putString("context_type", capture(typeSlot)) } returns mockEditor
         every { mockEditor.putString("context_id", capture(idSlot)) } returns mockEditor
         every { mockEditor.putLong("last_song_id", capture(songIdSlot)) } returns mockEditor
+        every { mockEditor.putLong("position_ms", capture(positionSlot)) } returns mockEditor
 
-        repo.save(QueueContext.AllSongs, 10L)
+        repo.save(QueueContext.AllSongs, 10L, 30_000L)
 
         assertEquals("ALL", typeSlot.captured)
         assertEquals("", idSlot.captured)
         assertEquals(10L, songIdSlot.captured)
+        assertEquals(30_000L, positionSlot.captured)
         verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun `save defaults positionMs to 0 when not provided`() {
+        val positionSlot = slot<Long>()
+        every { mockEditor.putLong("position_ms", capture(positionSlot)) } returns mockEditor
+
+        repo.save(QueueContext.AllSongs, 10L)
+
+        assertEquals(0L, positionSlot.captured)
     }
 
     @Test

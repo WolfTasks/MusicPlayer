@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
@@ -19,6 +20,7 @@ import com.wolf.musicplayer.domain.model.Playlist
 import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.service.MusicService
+import com.wolf.musicplayer.service.parseSongId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -109,6 +111,8 @@ class PlayerViewModel
         private var playbackStartPosition: Long = 0L
         private var currentQueueContext: QueueContext = QueueContext.AllSongs
         private var positionTracker: Job? = null
+        private var positionSaveCounter = 0
+        private var pendingInternalQueueSetCount = 0
 
         init {
             connectToService()
@@ -128,7 +132,20 @@ class PlayerViewModel
             object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     _state.update { it.copy(isPlaying = isPlaying) }
-                    if (isPlaying) startPositionTracking() else stopPositionTracking()
+                    if (isPlaying) {
+                        startPositionTracking()
+                    } else {
+                        stopPositionTracking()
+                        currentSongId?.let { id ->
+                            viewModelScope.launch {
+                                playbackSessionRepository.save(
+                                    currentQueueContext,
+                                    id,
+                                    controller?.currentPosition ?: _state.value.position,
+                                )
+                            }
+                        }
+                    }
                 }
 
                 override fun onMediaItemTransition(
@@ -175,6 +192,19 @@ class PlayerViewModel
                 override fun onRepeatModeChanged(repeatMode: Int) {
                     _state.update { it.copy(repeatMode = repeatMode) }
                 }
+
+                override fun onTimelineChanged(
+                    timeline: Timeline,
+                    reason: Int,
+                ) {
+                    if (pendingInternalQueueSetCount > 0) {
+                        pendingInternalQueueSetCount--
+                        return
+                    }
+                    if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
+                        viewModelScope.launch { rebuildActiveQueueFromController() }
+                    }
+                }
             }
 
         // Must be called on the main thread — positionTracker is not thread-safe.
@@ -182,12 +212,21 @@ class PlayerViewModel
             positionTracker?.cancel()
             positionTracker =
                 viewModelScope.launch {
+                    positionSaveCounter = 0
                     while (isActive) {
+                        val pos = controller?.currentPosition ?: _state.value.position
                         _state.update { s ->
                             s.copy(
-                                position = controller?.currentPosition ?: s.position,
+                                position = pos,
                                 duration = controller?.duration?.coerceAtLeast(0L) ?: s.duration,
                             )
+                        }
+                        positionSaveCounter++
+                        if (positionSaveCounter >= 20) {
+                            positionSaveCounter = 0
+                            currentSongId?.let { id ->
+                                playbackSessionRepository.save(currentQueueContext, id, pos)
+                            }
                         }
                         delay(500)
                     }
@@ -216,6 +255,22 @@ class PlayerViewModel
             }
         }
 
+        private suspend fun rebuildActiveQueueFromController() {
+            val ctrl = controller ?: return
+            val count = ctrl.mediaItemCount
+            if (count == 0) return
+            val ids = (0 until count).mapNotNull { i -> parseSongId(ctrl.getMediaItemAt(i).mediaId) }
+            if (ids.isEmpty()) return
+            val songsById = songRepository.getByIds(ids).associateBy { it.id }
+            val rebuilt = ids.mapNotNull { songsById[it] }
+            if (rebuilt.isEmpty()) return
+            positionSaveCounter = 0
+            activeQueue = rebuilt
+            currentQueue = rebuilt
+            playbackSessionRepository.load()?.let { triple -> currentQueueContext = triple.first }
+            syncStateFromController()
+        }
+
         fun playSongs(
             songs: List<Song>,
             startIndex: Int = 0,
@@ -242,7 +297,7 @@ class PlayerViewModel
                 val items =
                     activeQueue.map { song ->
                         MediaItem.Builder()
-                            .setMediaId(song.id.toString())
+                            .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
@@ -251,7 +306,13 @@ class PlayerViewModel
                     playbackSessionRepository.save(queueContext, song.id)
                 }
                 currentSongId = null
-                ctrl.setMediaItems(items, activeIndex, 0L)
+                pendingInternalQueueSetCount++
+                try {
+                    ctrl.setMediaItems(items, activeIndex, 0L)
+                } catch (e: Exception) {
+                    pendingInternalQueueSetCount--
+                    throw e
+                }
                 ctrl.prepare()
                 ctrl.play()
                 syncStateFromController()
@@ -295,15 +356,21 @@ class PlayerViewModel
                 val items =
                     activeQueue.map { song ->
                         MediaItem.Builder()
-                            .setMediaId(song.id.toString())
+                            .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
                 currentSongId = null
                 activeQueue.getOrNull(newIndex)?.let { song ->
-                    playbackSessionRepository.save(currentQueueContext, song.id)
+                    playbackSessionRepository.save(currentQueueContext, song.id, position)
                 }
-                ctrl.setMediaItems(items, newIndex, position)
+                pendingInternalQueueSetCount++
+                try {
+                    ctrl.setMediaItems(items, newIndex, position)
+                } catch (e: Exception) {
+                    pendingInternalQueueSetCount--
+                    throw e
+                }
                 ctrl.prepare()
                 if (wasPlaying) ctrl.play()
                 syncStateFromController()
