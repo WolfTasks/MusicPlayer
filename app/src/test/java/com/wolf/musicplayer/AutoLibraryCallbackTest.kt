@@ -611,4 +611,19 @@ class AutoLibraryCallbackTest {
             assertEquals(2, result.mediaItems.size) // fell back to full library
             assertEquals(0, result.startIndex)
         }
+
+    @Test
+    fun `onPlaybackResumption restores startPositionMs from saved session`() =
+        runTest {
+            val songs = listOf(song(1), song(2), song(3))
+            coEvery { songRepo.getAll() } returns songs
+            every { playbackSessionRepo.load() } returns Triple(QueueContext.AllSongs, 2L, 45_000L)
+
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(1, result.startIndex) // song:2 at index 1
+            assertEquals(45_000L, result.startPositionMs)
+        }
 }

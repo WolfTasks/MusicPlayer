@@ -159,7 +159,7 @@ class AutoLibraryCallback
                     val savedSession = playbackSessionRepository.load()
                     val rawSongs =
                         if (savedSession != null) {
-                            val (ctx, _) = savedSession
+                            val (ctx, _, _) = savedSession
                             val ctxSongs =
                                 when (ctx) {
                                     is QueueContext.AllSongs -> songRepository.getAll()
@@ -186,7 +186,8 @@ class AutoLibraryCallback
                             0
                         }
                     val items = queue.map { it.toMediaItem("song:${it.id}") }
-                    future.set(MediaSession.MediaItemsWithStartPosition(items, startIndex, 0L))
+                    val startPositionMs = savedSession?.third ?: 0L
+                    future.set(MediaSession.MediaItemsWithStartPosition(items, startIndex, startPositionMs))
                 } catch (e: Exception) {
                     future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
                 }
