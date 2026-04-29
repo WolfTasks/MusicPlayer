@@ -413,19 +413,19 @@ class AutoLibraryCallbackTest {
     @Test
     fun `onSetMediaItems from in-app controller passes items through unchanged`() =
         runTest {
-            // Simulate PlayerViewModel: plain song IDs, URIs already set, no "song:" prefix
+            // Simulate PlayerViewModel: items already built with "song:N" mediaIds and URIs — passed through unchanged
             val inAppController =
                 mockk<MediaSession.ControllerInfo>(relaxed = true) {
                     every { packageName } returns "com.wolf.musicplayer"
                 }
             val item1 =
                 androidx.media3.common.MediaItem.Builder()
-                    .setMediaId("1")
+                    .setMediaId("song:1")
                     .setUri(Uri.parse("/music/1.mp3"))
                     .build()
             val item2 =
                 androidx.media3.common.MediaItem.Builder()
-                    .setMediaId("2")
+                    .setMediaId("song:2")
                     .setUri(Uri.parse("/music/2.mp3"))
                     .build()
 
@@ -442,8 +442,8 @@ class AutoLibraryCallbackTest {
 
             // Items returned unchanged — no DB lookup, same IDs and count
             assertEquals(2, result.mediaItems.size)
-            assertEquals("1", result.mediaItems[0].mediaId)
-            assertEquals("2", result.mediaItems[1].mediaId)
+            assertEquals("song:1", result.mediaItems[0].mediaId)
+            assertEquals("song:2", result.mediaItems[1].mediaId)
             assertEquals(1, result.startIndex)
             assertEquals(30_000L, result.startPositionMs)
             // Assert URIs are preserved — items must be the exact same objects

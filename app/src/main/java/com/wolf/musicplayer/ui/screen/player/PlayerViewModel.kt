@@ -264,6 +264,7 @@ class PlayerViewModel
             val songsById = songRepository.getByIds(ids).associateBy { it.id }
             val rebuilt = ids.mapNotNull { songsById[it] }
             if (rebuilt.isEmpty()) return
+            positionSaveCounter = 0
             activeQueue = rebuilt
             currentQueue = rebuilt
             playbackSessionRepository.load()?.let { triple -> currentQueueContext = triple.first }
