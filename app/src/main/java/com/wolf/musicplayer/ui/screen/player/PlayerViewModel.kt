@@ -265,7 +265,7 @@ class PlayerViewModel
                 val items =
                     activeQueue.map { song ->
                         MediaItem.Builder()
-                            .setMediaId(song.id.toString())
+                            .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
@@ -318,7 +318,7 @@ class PlayerViewModel
                 val items =
                     activeQueue.map { song ->
                         MediaItem.Builder()
-                            .setMediaId(song.id.toString())
+                            .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
                     }
