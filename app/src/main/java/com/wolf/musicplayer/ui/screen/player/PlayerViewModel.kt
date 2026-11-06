@@ -277,6 +277,8 @@ class PlayerViewModel
             queueContext: QueueContext = QueueContext.AllSongs,
         ) {
             val ctrl = controller ?: return
+            // Nothing to play (e.g. empty playlist/album): keep the current queue and playback untouched.
+            if (songs.isEmpty()) return
             currentQueue = songs
             currentQueueContext = queueContext
             viewModelScope.launch {
@@ -342,6 +344,8 @@ class PlayerViewModel
                 shuffleStateHolder.setShuffleEnabled(enabled)
                 _state.update { it.copy(shuffleEnabled = enabled) }
                 val ctrl = controller ?: return@launch
+                // Nothing queued yet: only the flag changes; the next playSongs() honours it.
+                if (currentQueue.isEmpty()) return@launch
                 val songId = currentSongId
                 val position = ctrl.currentPosition
                 val wasPlaying = ctrl.isPlaying

@@ -41,7 +41,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -423,12 +422,11 @@ class PlayerViewModelTest {
             coVerify { playlistRepo.addSong(9L, 2L, 0) }
         }
 
-    // --- Known bugs (see PR description). Remove @Ignore once PlayerViewModel guards empty queues. ---
+    // --- Regression: empty queues must not crash (permute([], []) used to throw) ---
 
-    // BUG: with a connected controller but nothing queued, toggleShuffle() calls
-    // WeightedShuffler.permute([], []), whose require() throws inside viewModelScope → crash
+    // Regression: with a connected controller but nothing queued, toggleShuffle() called
+    // WeightedShuffler.permute([], []), whose require() threw inside viewModelScope → crash
     // when the user presses shuffle before playing anything.
-    @Ignore("Known bug: toggleShuffle() on empty queue throws")
     @Test
     fun `toggleShuffle before anything was played does not crash`() =
         runTest(dispatcher) {
@@ -440,9 +438,8 @@ class PlayerViewModelTest {
             assertTrue(vm.state.value.shuffleEnabled)
         }
 
-    // BUG: playSongs(emptyList()) with shuffle on calls WeightedShuffler.permute([], []) → crash
+    // Regression: playSongs(emptyList()) with shuffle on called WeightedShuffler.permute([], []) → crash
     // (e.g. playing an empty playlist or album while shuffle is enabled).
-    @Ignore("Known bug: playSongs(emptyList()) with shuffle throws")
     @Test
     fun `playSongs with an empty list and shuffle enabled does not crash`() =
         runTest(dispatcher) {
