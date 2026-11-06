@@ -1,0 +1,207 @@
+name: Nightly Security Scan
+
+on:
+  schedule:
+    - cron: '23 2 * * *'   # täglich 02:23 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/nightly-security.yml'
+      - '.github/scripts/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Nightly SCA scan via Trivy (DB from GHCR, independent of the NVD live API).
+# Trivy only understands Gradle via lockfiles, which this repo does not commit, so
+# each job generates them ephemerally with .github/scripts/lock-all.init.gradle.
+#
+#  - app-runtime:    what ships in the APK (releaseRuntimeClasspath) → GATE on HIGH/CRITICAL
+#  - build-tooling:  every configuration incl. AGP/KSP/test-platform internals → REPORT ONLY
+#                    (these never ship to devices; fixed by AGP/Gradle upgrades)
+#  - dependency-graph: submits the resolved graph so Dependabot alerts see transitive deps
+jobs:
+  app-runtime:
+    name: CVE scan – shipped app (gate HIGH,CRITICAL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43   # v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1              # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad            # v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c   # v6.4.1
+
+      - name: Generate lockfile for releaseRuntimeClasspath
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --init-script .github/scripts/lock-all.init.gradle \
+            :app:dependencies --configuration releaseRuntimeClasspath --write-locks --console=plain -q > /dev/null
+          # Guard against a silently green scan of an empty lockfile
+          test "$(grep -c '=releaseRuntimeClasspath' app/gradle.lockfile)" -gt 20
+
+      - name: Trivy scan (JSON, all severities)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25    # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: app/gradle.lockfile
+          scanners: vuln
+          format: json
+          output: trivy-app.json
+          exit-code: '0'
+
+      - name: Trivy scan (SARIF, all severities)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25    # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: 'true'
+        with:
+          scan-type: fs
+          scan-ref: app/gradle.lockfile
+          scanners: vuln
+          format: sarif
+          output: trivy-app.sarif
+          exit-code: '0'
+
+      - name: Upload SARIF
+        if: always() && hashFiles('trivy-app.sarif') != ''
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370   # v4.39.1
+        with:
+          sarif_file: trivy-app.sarif
+          category: trivy-nightly-app
+
+      - name: Report and gate
+        run: .github/scripts/trivy-report.sh trivy-app.json "Shipped app (releaseRuntimeClasspath)" gate
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: trivy-app-report
+          path: trivy-app.*
+          retention-days: 30
+
+  build-tooling:
+    name: CVE scan – build tooling (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43   # v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1              # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad            # v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c   # v6.4.1
+
+      - name: Generate lockfile for all configurations
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --init-script .github/scripts/lock-all.init.gradle \
+            :app:dependencies --write-locks --console=plain -q > /dev/null
+          test "$(wc -l < app/gradle.lockfile)" -gt 100
+
+      - name: Trivy scan (JSON, all severities)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25    # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: app/gradle.lockfile
+          scanners: vuln
+          format: json
+          output: trivy-tooling.json
+          exit-code: '0'
+
+      - name: Trivy scan (SARIF, all severities)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25    # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: 'true'
+        with:
+          scan-type: fs
+          scan-ref: app/gradle.lockfile
+          scanners: vuln
+          format: sarif
+          output: trivy-tooling.sarif
+          exit-code: '0'
+
+      - name: Upload SARIF
+        if: always() && hashFiles('trivy-tooling.sarif') != ''
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370   # v4.39.1
+        with:
+          sarif_file: trivy-tooling.sarif
+          category: trivy-nightly-build-tooling
+
+      - name: Report (no gate)
+        run: .github/scripts/trivy-report.sh trivy-tooling.json "Build tooling (all Gradle configurations, not shipped)" report
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: trivy-build-tooling-report
+          path: trivy-tooling.*
+          retention-days: 30
+
+  dependency-graph:
+    name: Submit dependency graph
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43   # v2
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1              # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad            # v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: chmod +x ./gradlew
+      - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c   # v6.4.1
+
+  notify:
+    name: Open issue on gate failure
+    needs: app-runtime
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3          # v9.0.0
+        with:
+          script: |
+            const title = 'Nightly security scan: HIGH/CRITICAL CVEs in app dependencies';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'security',
+            });
+            const existing = open.find((i) => i.title === title);
+            const body = `Trivy meldet HIGH/CRITICAL-CVEs in der ausgelieferten App (releaseRuntimeClasspath).\n\n` +
+              `Run: ${runUrl}\nDetails: Step-Summary des Runs und Security-Tab → Code scanning, Kategorie \`trivy-nightly-app\`.`;
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number,
+                body: `Weiterhin offen (${new Date().toISOString().slice(0, 10)}): ${runUrl}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ['security'],
+              });
+            }
