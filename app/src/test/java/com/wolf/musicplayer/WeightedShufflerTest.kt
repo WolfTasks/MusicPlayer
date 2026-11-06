@@ -86,9 +86,7 @@ class WeightedShufflerTest {
     }
 
     @Test
-    fun `permute throws when items list is empty`() {
-        assertThrows(IllegalArgumentException::class.java) {
-            shuffler.permute(emptyList<String>(), emptyList())
-        }
+    fun `permute returns empty list for empty input`() {
+        assertEquals(emptyList<String>(), shuffler.permute(emptyList<String>(), emptyList()))
     }
 }

@@ -27,8 +27,9 @@ class WeightedShuffler
             items: List<T>,
             weights: List<Float>,
         ): List<T> {
-            require(items.isNotEmpty()) { "Items list must not be empty" }
             require(items.size == weights.size) { "Items and weights must have equal size" }
+            // A permutation of nothing is nothing — callers (queue building) must not crash on empty libraries.
+            if (items.isEmpty()) return emptyList()
             val remaining = items.toMutableList()
             val remainingWeights = weights.toMutableList()
             val result = mutableListOf<T>()
