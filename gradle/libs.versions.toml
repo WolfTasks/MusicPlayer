@@ -23,6 +23,8 @@ coroutinesTest = "1.8.1"
 robolectric = "4.12.1"
 roomTesting = "2.6.1"
 ktlint = "12.1.1"
+# Security floor for transitive Guava (via Media3): CVE-2026-102554 fixed in 33.7.2
+guava = "33.7.2-android"
 
 [libraries]
 # Compose BOM
@@ -67,6 +69,8 @@ junit-ext = { group = "androidx.test.ext", name = "junit", version.ref = "junitE
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+# Constraint only (see app/build.gradle.kts)
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

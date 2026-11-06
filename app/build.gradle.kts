@@ -51,6 +51,11 @@ ksp {
 }
 
 dependencies {
+    constraints {
+        implementation(libs.guava) {
+            because("CVE-2026-102554: Guava < 33.7.2 pulled in transitively by Media3")
+        }
+    }
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

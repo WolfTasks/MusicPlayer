@@ -1,0 +1,8 @@
+// Ephemeral init script for the nightly CVE scan: enables dependency locking for every
+// configuration so `--write-locks` produces gradle.lockfile(s) that Trivy can read.
+// Lockfiles are generated in CI only and are not committed.
+allprojects {
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
