@@ -25,3 +25,6 @@ app/build/
 
 # Git worktrees
 .worktrees/
+
+# Superpowers brainstorm scratch
+.superpowers/
