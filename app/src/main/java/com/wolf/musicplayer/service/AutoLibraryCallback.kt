@@ -1,13 +1,13 @@
 package com.wolf.musicplayer.service
 
-import android.content.Context
+import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
-import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -21,7 +21,6 @@ import com.wolf.musicplayer.domain.ShuffleStateHolder
 import com.wolf.musicplayer.domain.WeightedShuffler
 import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -33,13 +32,13 @@ import javax.inject.Singleton
 class AutoLibraryCallback
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
         private val songRepository: SongRepository,
         private val playlistRepository: PlaylistRepository,
         private val playWeightRepository: PlayWeightRepository,
         private val shuffler: WeightedShuffler,
         private val shuffleStateHolder: ShuffleStateHolder,
         private val playbackSessionRepository: PlaybackSessionRepository,
+        private val callerValidator: MediaCallerValidator,
         @ApplicationScope private val scope: CoroutineScope,
     ) : MediaLibrarySession.Callback {
         companion object {
@@ -52,6 +51,53 @@ class AutoLibraryCallback
 
         private var callbackJob = SupervisorJob(scope.coroutineContext[Job])
         private var callbackScope = CoroutineScope(scope.coroutineContext + callbackJob)
+
+        // ── Access control ──────────────────────────────────────────────────────
+
+        /**
+         * MusicService is exported, so any installed app can try to connect. Only our own app,
+         * System UI / trusted system controllers and signature-verified Android Auto/Automotive
+         * hosts are accepted; everyone else is rejected before it can browse the library.
+         */
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult =
+            if (callerValidator.isAllowed(session, controller)) {
+                super.onConnect(session, controller)
+            } else {
+                MediaSession.ConnectionResult.reject()
+            }
+
+        /**
+         * Never trust URIs supplied by external controllers: they could point at arbitrary
+         * content that would then be read with this app's permissions. Items are resolved
+         * solely by mediaId from our own database; unknown ids are dropped.
+         */
+        override fun onAddMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: List<MediaItem>,
+        ): ListenableFuture<List<MediaItem>> {
+            if (callerValidator.isOwnApp(controller)) {
+                return Futures.immediateFuture(mediaItems)
+            }
+            val future = SettableFuture.create<List<MediaItem>>()
+            callbackScope.launch {
+                try {
+                    val resolved =
+                        mediaItems.mapNotNull { item ->
+                            parseSongId(item.mediaId)
+                                ?.let { songRepository.getById(it) }
+                                ?.toMediaItem(item.mediaId)
+                        }
+                    future.set(resolved)
+                } catch (e: Exception) {
+                    future.set(emptyList())
+                }
+            }
+            return future
+        }
 
         // ── Browse ──────────────────────────────────────────────────────────────
 
@@ -104,7 +150,7 @@ class AutoLibraryCallback
                         }
                     future.set(LibraryResult.ofItemList(items, null))
                 } catch (e: Exception) {
-                    future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_UNKNOWN))
+                    future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_UNKNOWN))
                 }
             }
             return future
@@ -123,10 +169,10 @@ class AutoLibraryCallback
                     if (song != null) {
                         future.set(LibraryResult.ofItem(song.toMediaItem(mediaId), null))
                     } else {
-                        future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_BAD_VALUE))
+                        future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE))
                     }
                 } catch (e: Exception) {
-                    future.set(LibraryResult.ofError(SessionResult.RESULT_ERROR_UNKNOWN))
+                    future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_UNKNOWN))
                 }
             }
             return future
@@ -149,6 +195,7 @@ class AutoLibraryCallback
 
         // ── Playback ────────────────────────────────────────────────────────────
 
+        @OptIn(UnstableApi::class)
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -195,6 +242,7 @@ class AutoLibraryCallback
             return future
         }
 
+        @OptIn(UnstableApi::class)
         override fun onSetMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -203,7 +251,7 @@ class AutoLibraryCallback
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             // In-app controller (PlayerViewModel): queue already built; pass through unchanged.
-            if (controller.packageName == context.packageName) {
+            if (callerValidator.isOwnApp(controller)) {
                 return Futures.immediateFuture(
                     MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs),
                 )

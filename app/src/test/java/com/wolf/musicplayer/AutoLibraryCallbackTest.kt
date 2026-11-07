@@ -1,6 +1,5 @@
 package com.wolf.musicplayer
 
-import android.content.Context
 import android.net.Uri
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
@@ -16,13 +15,17 @@ import com.wolf.musicplayer.domain.model.QueueContext
 import com.wolf.musicplayer.domain.model.Song
 import com.wolf.musicplayer.domain.model.SourceType
 import com.wolf.musicplayer.service.AutoLibraryCallback
+import com.wolf.musicplayer.service.MediaCallerValidator
+import com.wolf.musicplayer.service.PackageInspector
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -37,7 +40,12 @@ class AutoLibraryCallbackTest {
     private lateinit var playbackSessionRepo: PlaybackSessionRepository
     private lateinit var callback: AutoLibraryCallback
 
-    private val mockContext = mockk<Context>(relaxed = true)
+    private val ownUid = 10_123
+    private val packageInspector =
+        mockk<PackageInspector>(relaxed = true) {
+            every { ownPackageName } returns "com.wolf.musicplayer"
+            every { ownUid } returns this@AutoLibraryCallbackTest.ownUid
+        }
     private val mockSession = mockk<MediaLibrarySession>(relaxed = true)
     private val mockBrowser = mockk<MediaSession.ControllerInfo>(relaxed = true)
 
@@ -60,18 +68,17 @@ class AutoLibraryCallbackTest {
         playWeightRepo = mockk(relaxed = true)
         shuffleStateHolder = ShuffleStateHolder()
         testScope = TestScope()
-        every { mockContext.packageName } returns "com.wolf.musicplayer"
         playbackSessionRepo = mockk(relaxed = true)
         every { playbackSessionRepo.load() } returns null
         callback =
             AutoLibraryCallback(
-                context = mockContext,
                 songRepository = songRepo,
                 playlistRepository = playlistRepo,
                 playWeightRepository = playWeightRepo,
                 shuffler = WeightedShuffler(),
                 shuffleStateHolder = shuffleStateHolder,
                 playbackSessionRepository = playbackSessionRepo,
+                callerValidator = MediaCallerValidator(packageInspector),
                 scope = testScope,
             )
     }
@@ -417,6 +424,7 @@ class AutoLibraryCallbackTest {
             val inAppController =
                 mockk<MediaSession.ControllerInfo>(relaxed = true) {
                     every { packageName } returns "com.wolf.musicplayer"
+                    every { uid } returns ownUid
                 }
             val item1 =
                 androidx.media3.common.MediaItem.Builder()
@@ -626,4 +634,153 @@ class AutoLibraryCallbackTest {
             assertEquals(1, result.startIndex) // song:2 at index 1
             assertEquals(45_000L, result.startPositionMs)
         }
+
+    // --- onAddMediaItems: external URIs are never trusted ---
+
+    @Test
+    fun `onAddMediaItems from external controller resolves items by mediaId from the DB`() =
+        runTest {
+            coEvery { songRepo.getById(7L) } returns song(7)
+            val foreign =
+                androidx.media3.common.MediaItem.Builder()
+                    .setMediaId("song:7")
+                    .setUri(Uri.parse("content://evil.provider/secret"))
+                    .build()
+
+            val future = callback.onAddMediaItems(mockMediaSession, mockController, listOf(foreign))
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(1, result.size)
+            assertEquals("song:7", result[0].mediaId)
+            // Rebuilt from the DB entry (song.toMediaItem), not the caller-supplied item with its foreign URI
+            assertTrue(result[0] !== foreign)
+            coVerify { songRepo.getById(7L) }
+        }
+
+    @Test
+    fun `onAddMediaItems from external controller drops items with unknown or arbitrary ids`() =
+        runTest {
+            coEvery { songRepo.getById(any()) } returns null
+            val items =
+                listOf(
+                    androidx.media3.common.MediaItem.fromUri("file:///data/data/other.app/db"),
+                    mediaItemWithId("song:999"),
+                    mediaItemWithId("not-a-song"),
+                )
+
+            val future = callback.onAddMediaItems(mockMediaSession, mockController, items)
+            testScope.advanceUntilIdle()
+
+            assertTrue(future.get().isEmpty())
+        }
+
+    @Test
+    fun `onAddMediaItems from in-app controller passes items through unchanged`() =
+        runTest {
+            val inApp =
+                mockk<MediaSession.ControllerInfo>(relaxed = true) {
+                    every { packageName } returns "com.wolf.musicplayer"
+                    every { uid } returns ownUid
+                }
+            val item =
+                androidx.media3.common.MediaItem.Builder()
+                    .setMediaId("song:1")
+                    .setUri(Uri.parse("/music/1.mp3"))
+                    .build()
+
+            val result = callback.onAddMediaItems(mockMediaSession, inApp, listOf(item)).get()
+
+            assertTrue(result[0] === item)
+        }
+
+    // --- onConnect: access control ---
+
+    private fun controller(
+        pkg: String,
+        controllerUid: Int,
+        trusted: Boolean = false,
+    ) = mockk<MediaSession.ControllerInfo>(relaxed = true) {
+        every { packageName } returns pkg
+        every { uid } returns controllerUid
+        every { isTrusted } returns trusted
+    }
+
+    @Test
+    fun `onConnect rejects an arbitrary third-party app`() {
+        val evil = controller("com.evil.app", 10_500)
+        every { packageInspector.uidOwnsPackage(10_500, "com.evil.app") } returns true
+        every { packageInspector.signingCertificatesSha256("com.evil.app") } returns setOf("abc123")
+
+        assertFalse(callback.onConnect(mockSession, evil).isAccepted)
+    }
+
+    @Test
+    fun `onConnect rejects an app impersonating the Android Auto package name`() {
+        val fakeAuto = controller(GEARHEAD, 10_600)
+        every { packageInspector.uidOwnsPackage(10_600, GEARHEAD) } returns true
+        every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf("deadbeef")
+
+        assertFalse(callback.onConnect(mockSession, fakeAuto).isAccepted)
+    }
+
+    @Test
+    fun `onConnect rejects a controller whose uid does not own the claimed package`() {
+        val spoofed = controller(GEARHEAD, 10_700)
+        every { packageInspector.uidOwnsPackage(10_700, GEARHEAD) } returns false
+        every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf(GEARHEAD_RELEASE_CERT)
+
+        assertFalse(callback.onConnect(mockSession, spoofed).isAccepted)
+    }
+
+    @Test
+    fun `onConnect accepts Android Auto signed with the release key`() {
+        val auto = controller(GEARHEAD, 10_800)
+        every { packageInspector.uidOwnsPackage(10_800, GEARHEAD) } returns true
+        every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf(GEARHEAD_RELEASE_CERT)
+
+        assertTrue(callback.onConnect(mockSession, auto).isAccepted)
+    }
+
+    @Test
+    fun `onConnect accepts a platform-signed system app such as the Automotive media host`() {
+        val carMedia = controller("com.android.car.media", 10_900)
+        every { packageInspector.uidOwnsPackage(10_900, "com.android.car.media") } returns true
+        every { packageInspector.signingCertificatesSha256("com.android.car.media") } returns setOf("platformkey")
+        every { packageInspector.platformCertificatesSha256() } returns setOf("platformkey")
+
+        assertTrue(callback.onConnect(mockSession, carMedia).isAccepted)
+    }
+
+    @Test
+    fun `onConnect accepts a trusted controller such as System UI`() {
+        val systemUi = controller("com.android.systemui", 10_050, trusted = true)
+
+        assertTrue(callback.onConnect(mockSession, systemUi).isAccepted)
+    }
+
+    @Test
+    fun `onConnect accepts the system process`() {
+        assertTrue(callback.onConnect(mockSession, controller("android", 1000)).isAccepted)
+    }
+
+    @Test
+    fun `onConnect accepts our own app`() {
+        val own = controller("com.wolf.musicplayer", ownUid)
+
+        assertTrue(callback.onConnect(mockSession, own).isAccepted)
+    }
+
+    @Test
+    fun `onConnect rejects own package name from a foreign uid`() {
+        val impostor = controller("com.wolf.musicplayer", 10_999)
+        every { packageInspector.uidOwnsPackage(10_999, "com.wolf.musicplayer") } returns false
+
+        assertFalse(callback.onConnect(mockSession, impostor).isAccepted)
+    }
+
+    private companion object {
+        const val GEARHEAD = "com.google.android.projection.gearhead"
+        const val GEARHEAD_RELEASE_CERT = "fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf"
+    }
 }
