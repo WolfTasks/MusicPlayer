@@ -21,6 +21,7 @@ class ArtistDetailViewModel
         internal val artistName: String = checkNotNull(savedStateHandle["artistName"])
 
         val songs: StateFlow<List<Song>> =
-            repo.observeByArtist(artistName)
+            repo
+                .observeByArtist(artistName)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     }

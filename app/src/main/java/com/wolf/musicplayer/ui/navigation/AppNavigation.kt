@@ -38,7 +38,11 @@ import com.wolf.musicplayer.ui.screen.player.PlayerViewModel
 import com.wolf.musicplayer.ui.screen.playlist.PlaylistDetailScreen
 import com.wolf.musicplayer.ui.screen.playlist.PlaylistScreen
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+sealed class Screen(
+    val route: String,
+    val label: String,
+    val icon: ImageVector,
+) {
     object Library : Screen("library", "Bibliothek", Icons.Default.LibraryMusic)
 
     object Playlists : Screen("playlists", "Playlists", Icons.Default.QueueMusic)

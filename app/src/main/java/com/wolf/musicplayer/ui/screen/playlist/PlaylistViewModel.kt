@@ -18,7 +18,8 @@ class PlaylistViewModel
         private val repo: PlaylistRepository,
     ) : ViewModel() {
         val playlists =
-            repo.observeAll()
+            repo
+                .observeAll()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         fun createPlaylist(name: String) {

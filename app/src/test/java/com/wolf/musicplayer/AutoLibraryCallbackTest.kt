@@ -55,10 +55,16 @@ class AutoLibraryCallbackTest {
         artist: String = "Artist",
         album: String = "Album",
     ) = Song(
-        id = id, title = title, artist = artist, album = album,
-        duration = 180_000L, sourceType = SourceType.LOCAL,
-        serverId = null, serverSongId = null,
-        localPath = "/music/$id.mp3", cachedPath = null,
+        id = id,
+        title = title,
+        artist = artist,
+        album = album,
+        duration = 180_000L,
+        sourceType = SourceType.LOCAL,
+        serverId = null,
+        serverSongId = null,
+        localPath = "/music/$id.mp3",
+        cachedPath = null,
     )
 
     @Before
@@ -285,7 +291,10 @@ class AutoLibraryCallbackTest {
         }
 
     private fun mediaItemWithId(mediaId: String): androidx.media3.common.MediaItem =
-        androidx.media3.common.MediaItem.Builder().setMediaId(mediaId).build()
+        androidx.media3.common.MediaItem
+            .Builder()
+            .setMediaId(mediaId)
+            .build()
 
     @Test
     fun `onSetMediaItems for song context loads all songs starting at tapped song`() =
@@ -427,12 +436,14 @@ class AutoLibraryCallbackTest {
                     every { uid } returns ownUid
                 }
             val item1 =
-                androidx.media3.common.MediaItem.Builder()
+                androidx.media3.common.MediaItem
+                    .Builder()
                     .setMediaId("song:1")
                     .setUri(Uri.parse("/music/1.mp3"))
                     .build()
             val item2 =
-                androidx.media3.common.MediaItem.Builder()
+                androidx.media3.common.MediaItem
+                    .Builder()
                     .setMediaId("song:2")
                     .setUri(Uri.parse("/music/2.mp3"))
                     .build()
@@ -642,7 +653,8 @@ class AutoLibraryCallbackTest {
         runTest {
             coEvery { songRepo.getById(7L) } returns song(7)
             val foreign =
-                androidx.media3.common.MediaItem.Builder()
+                androidx.media3.common.MediaItem
+                    .Builder()
                     .setMediaId("song:7")
                     .setUri(Uri.parse("content://evil.provider/secret"))
                     .build()
@@ -664,7 +676,8 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getById(any()) } returns null
             val items =
                 listOf(
-                    androidx.media3.common.MediaItem.fromUri("file:///data/data/other.app/db"),
+                    androidx.media3.common.MediaItem
+                        .fromUri("file:///data/data/other.app/db"),
                     mediaItemWithId("song:999"),
                     mediaItemWithId("not-a-song"),
                 )
@@ -684,7 +697,8 @@ class AutoLibraryCallbackTest {
                     every { uid } returns ownUid
                 }
             val item =
-                androidx.media3.common.MediaItem.Builder()
+                androidx.media3.common.MediaItem
+                    .Builder()
                     .setMediaId("song:1")
                     .setUri(Uri.parse("/music/1.mp3"))
                     .build()
@@ -808,13 +822,14 @@ class AutoLibraryCallbackTest {
     // --- onSetMediaItems: voice search (MEDIA_PLAY_FROM_SEARCH / playFromSearch) ---
 
     private fun searchItem(query: String): androidx.media3.common.MediaItem =
-        androidx.media3.common.MediaItem.Builder()
+        androidx.media3.common.MediaItem
+            .Builder()
             .setRequestMetadata(
-                androidx.media3.common.MediaItem.RequestMetadata.Builder()
+                androidx.media3.common.MediaItem.RequestMetadata
+                    .Builder()
                     .setSearchQuery(query)
                     .build(),
-            )
-            .build()
+            ).build()
 
     @Test
     fun `onSetMediaItems with search query plays matching songs`() =

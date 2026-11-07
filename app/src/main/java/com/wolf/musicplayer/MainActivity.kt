@@ -66,16 +66,23 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) return
         val query = intent.getStringExtra(SearchManager.QUERY).orEmpty()
         val future =
-            searchController ?: MediaController.Builder(
-                this,
-                SessionToken(this, ComponentName(this, MusicService::class.java)),
-            ).buildAsync().also { searchController = it }
+            searchController ?: MediaController
+                .Builder(
+                    this,
+                    SessionToken(this, ComponentName(this, MusicService::class.java)),
+                ).buildAsync()
+                .also { searchController = it }
         future.addListener({
             val controller = future.get()
             val item =
-                MediaItem.Builder()
-                    .setRequestMetadata(MediaItem.RequestMetadata.Builder().setSearchQuery(query).build())
-                    .build()
+                MediaItem
+                    .Builder()
+                    .setRequestMetadata(
+                        MediaItem.RequestMetadata
+                            .Builder()
+                            .setSearchQuery(query)
+                            .build(),
+                    ).build()
             controller.setMediaItems(listOf(item))
             controller.prepare()
             controller.play()

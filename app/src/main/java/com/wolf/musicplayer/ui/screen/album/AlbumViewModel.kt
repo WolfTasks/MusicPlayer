@@ -11,8 +11,11 @@ import javax.inject.Inject
 @HiltViewModel
 class AlbumViewModel
     @Inject
-    constructor(repo: SongRepository) : ViewModel() {
+    constructor(
+        repo: SongRepository,
+    ) : ViewModel() {
         val albums =
-            repo.observeAlbums()
+            repo
+                .observeAlbums()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     }

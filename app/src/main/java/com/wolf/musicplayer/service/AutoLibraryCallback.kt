@@ -107,16 +107,17 @@ class AutoLibraryCallback
             params: LibraryParams?,
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val root =
-                MediaItem.Builder()
+                MediaItem
+                    .Builder()
                     .setMediaId(ROOT_ID)
                     .setMediaMetadata(
-                        MediaMetadata.Builder()
+                        MediaMetadata
+                            .Builder()
                             .setIsBrowsable(true)
                             .setIsPlayable(false)
                             .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
                             .build(),
-                    )
-                    .build()
+                    ).build()
             return Futures.immediateFuture(LibraryResult.ofItem(root, null))
         }
 
@@ -133,20 +134,42 @@ class AutoLibraryCallback
                 try {
                     val items: List<MediaItem> =
                         when {
-                            parentId == ROOT_ID -> buildRootCategories()
-                            parentId == SONGS_ID -> buildAllSongItems()
-                            parentId == PLAYLISTS_ID -> buildPlaylistItems()
-                            parentId == ALBUMS_ID -> buildAlbumItems()
-                            parentId == ARTISTS_ID -> buildArtistItems()
+                            parentId == ROOT_ID -> {
+                                buildRootCategories()
+                            }
+
+                            parentId == SONGS_ID -> {
+                                buildAllSongItems()
+                            }
+
+                            parentId == PLAYLISTS_ID -> {
+                                buildPlaylistItems()
+                            }
+
+                            parentId == ALBUMS_ID -> {
+                                buildAlbumItems()
+                            }
+
+                            parentId == ARTISTS_ID -> {
+                                buildArtistItems()
+                            }
+
                             parentId.startsWith("playlist:") -> {
                                 val id = parentId.removePrefix("playlist:").toLongOrNull()
                                 if (id != null) buildPlaylistSongItems(parentId, id) else emptyList()
                             }
-                            parentId.startsWith("album:") ->
+
+                            parentId.startsWith("album:") -> {
                                 buildAlbumSongItems(parentId, parentId.removePrefix("album:"))
-                            parentId.startsWith("artist:") ->
+                            }
+
+                            parentId.startsWith("artist:") -> {
                                 buildArtistSongItems(parentId, parentId.removePrefix("artist:"))
-                            else -> emptyList()
+                            }
+
+                            else -> {
+                                emptyList()
+                            }
                         }
                     future.set(LibraryResult.ofItemList(items, null))
                 } catch (e: Exception) {
@@ -253,7 +276,8 @@ class AutoLibraryCallback
             // Voice search ("play X" via Assistant / Android Auto, or MainActivity's
             // MEDIA_PLAY_FROM_SEARCH handler): a single item carrying only a search query.
             val searchQuery =
-                mediaItems.singleOrNull()
+                mediaItems
+                    .singleOrNull()
                     ?.takeIf { it.localConfiguration == null }
                     ?.requestMetadata
                     ?.searchQuery
@@ -319,8 +343,8 @@ class AutoLibraryCallback
             return future
         }
 
-        private suspend fun resolveQueue(mediaId: String): Pair<List<Song>, Long?> {
-            return when {
+        private suspend fun resolveQueue(mediaId: String): Pair<List<Song>, Long?> =
+            when {
                 mediaId.startsWith("album:") -> {
                     val rest = mediaId.removePrefix("album:")
                     val slashIdx = rest.indexOf("/song:")
@@ -336,6 +360,7 @@ class AutoLibraryCallback
                         }
                     }
                 }
+
                 mediaId.startsWith("artist:") -> {
                     val rest = mediaId.removePrefix("artist:")
                     val slashIdx = rest.indexOf("/song:")
@@ -351,6 +376,7 @@ class AutoLibraryCallback
                         }
                     }
                 }
+
                 mediaId.startsWith("playlist:") -> {
                     val rest = mediaId.removePrefix("playlist:")
                     val slashIdx = rest.indexOf("/song:")
@@ -370,6 +396,7 @@ class AutoLibraryCallback
                         }
                     }
                 }
+
                 mediaId.startsWith("song:") -> {
                     val songId = mediaId.removePrefix("song:").toLongOrNull()
                     if (songId == null) {
@@ -378,9 +405,11 @@ class AutoLibraryCallback
                         Pair(songRepository.getAll(), songId)
                     }
                 }
-                else -> Pair(emptyList(), null)
+
+                else -> {
+                    Pair(emptyList(), null)
+                }
             }
-        }
 
         // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -421,7 +450,8 @@ class AutoLibraryCallback
             parentId: String,
             playlistId: Long,
         ): List<MediaItem> =
-            playlistRepository.getSongsForPlaylist(playlistId)
+            playlistRepository
+                .getSongsForPlaylist(playlistId)
                 .map { it.toMediaItem("$parentId/song:${it.id}") }
 
         private suspend fun buildAlbumSongItems(
@@ -439,25 +469,28 @@ class AutoLibraryCallback
             title: String,
             mediaType: Int,
         ): MediaItem =
-            MediaItem.Builder()
+            MediaItem
+                .Builder()
                 .setMediaId(mediaId)
                 .setMediaMetadata(
-                    MediaMetadata.Builder()
+                    MediaMetadata
+                        .Builder()
                         .setTitle(title)
                         .setIsBrowsable(true)
                         .setIsPlayable(false)
                         .setMediaType(mediaType)
                         .build(),
-                )
-                .build()
+                ).build()
     }
 
 internal fun Song.toMediaItem(mediaId: String): MediaItem =
-    MediaItem.Builder()
+    MediaItem
+        .Builder()
         .setMediaId(mediaId)
         .setUri(localPath ?: cachedPath ?: "")
         .setMediaMetadata(
-            MediaMetadata.Builder()
+            MediaMetadata
+                .Builder()
                 .setTitle(title)
                 .setArtist(artist)
                 .setAlbumTitle(album)
@@ -465,8 +498,7 @@ internal fun Song.toMediaItem(mediaId: String): MediaItem =
                 .setIsPlayable(true)
                 .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
                 .build(),
-        )
-        .build()
+        ).build()
 
 internal fun parseSongId(mediaId: String): Long? =
     when {

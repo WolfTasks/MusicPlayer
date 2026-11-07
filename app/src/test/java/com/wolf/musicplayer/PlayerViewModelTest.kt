@@ -170,7 +170,11 @@ class PlayerViewModelTest {
             verify { controller.prepare() }
             verify { controller.play() }
             verify { sessionRepository.save(QueueContext.AlbumCtx("Album"), 2L) }
-            assertEquals(2L, vm.state.value.currentSong?.id)
+            assertEquals(
+                2L,
+                vm.state.value.currentSong
+                    ?.id,
+            )
             assertEquals(songs, vm.state.value.queue)
             verify(exactly = 0) { shuffler.permute<Song>(any(), any()) }
         }
@@ -195,7 +199,11 @@ class PlayerViewModelTest {
             assertEquals(listOf("song:3", "song:1", "song:2"), mediaIds(items.captured))
             // song 1 (startIndex 0 in the original list) sits at index 1 in the shuffled queue
             verify { controller.setMediaItems(any(), 1, 0L) }
-            assertEquals(1L, vm.state.value.currentSong?.id)
+            assertEquals(
+                1L,
+                vm.state.value.currentSong
+                    ?.id,
+            )
         }
 
     @Test
@@ -210,7 +218,11 @@ class PlayerViewModelTest {
 
             coVerify(exactly = 1) { playWeightRepository.recordSkip(1L) }
             verify { sessionRepository.save(QueueContext.AllSongs, 2L) }
-            assertEquals(2L, vm.state.value.currentSong?.id)
+            assertEquals(
+                2L,
+                vm.state.value.currentSong
+                    ?.id,
+            )
         }
 
     @Test
@@ -224,7 +236,11 @@ class PlayerViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 0) { playWeightRepository.recordSkip(any()) }
-            assertEquals(2L, vm.state.value.currentSong?.id)
+            assertEquals(
+                2L,
+                vm.state.value.currentSong
+                    ?.id,
+            )
         }
 
     @Test
