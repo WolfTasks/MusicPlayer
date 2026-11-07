@@ -43,7 +43,7 @@ echo "✓ Tests OK"
 echo ""
 echo "=== [3/3] KI Code-Review ==="
 DIFF=$(git diff --cached -- '*.kt')
-if ! RESULT=$(echo "$DIFF" | claude -p scripts/review-agent-prompt.md 2>&1); then
+if ! RESULT=$(echo "$DIFF" | claude -p "$(cat scripts/review-agent-prompt.md)" 2>&1); then
     echo "✗ KI-Review: Claude-Aufruf fehlgeschlagen — Commit blockiert"
     exit 1
 fi

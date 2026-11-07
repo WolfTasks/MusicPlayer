@@ -5,6 +5,7 @@ import com.wolf.musicplayer.data.db.entity.SongEntity
 import com.wolf.musicplayer.data.repository.SongRepository
 import com.wolf.musicplayer.data.source.LocalDataSource
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -45,5 +46,28 @@ class SongRepositoryTest {
             assertEquals("Three", result[0].title)
             assertEquals(7L, result[1].id)
             assertEquals("Seven", result[1].title)
+        }
+
+    @Test
+    fun `search with blank query returns the whole library`() =
+        runTest {
+            coEvery { dao.getAll() } returns
+                listOf(SongEntity(id = 1, title = "One", artist = "A", album = "B", duration = 1, sourceType = "LOCAL"))
+
+            val result = repo.search("   ")
+
+            assertEquals(listOf(1L), result.map { it.id })
+            coVerify(exactly = 0) { dao.search(any()) }
+        }
+
+    @Test
+    fun `search passes the trimmed query to the DAO`() =
+        runTest {
+            coEvery { dao.search("beatles") } returns
+                listOf(SongEntity(id = 5, title = "Help", artist = "Beatles", album = "Help", duration = 1, sourceType = "LOCAL"))
+
+            val result = repo.search("  beatles ")
+
+            assertEquals(listOf(5L), result.map { it.id })
         }
 }

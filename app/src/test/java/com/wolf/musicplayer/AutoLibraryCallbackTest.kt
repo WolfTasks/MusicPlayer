@@ -804,4 +804,56 @@ class AutoLibraryCallbackTest {
         const val GEARHEAD = "com.google.android.projection.gearhead"
         const val GEARHEAD_RELEASE_CERT = "fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf"
     }
+
+    // --- onSetMediaItems: voice search (MEDIA_PLAY_FROM_SEARCH / playFromSearch) ---
+
+    private fun searchItem(query: String): androidx.media3.common.MediaItem =
+        androidx.media3.common.MediaItem.Builder()
+            .setRequestMetadata(
+                androidx.media3.common.MediaItem.RequestMetadata.Builder()
+                    .setSearchQuery(query)
+                    .build(),
+            )
+            .build()
+
+    @Test
+    fun `onSetMediaItems with search query plays matching songs`() =
+        runTest {
+            shuffleStateHolder.setShuffleEnabled(false)
+            coEvery { songRepo.search("beatles") } returns listOf(song(4), song(5))
+
+            val future = callback.onSetMediaItems(mockMediaSession, mockController, listOf(searchItem("beatles")), -1, 0L)
+            testScope.advanceUntilIdle()
+            val result = future.get()
+
+            assertEquals(listOf("song:4", "song:5"), result.mediaItems.map { it.mediaId })
+            assertEquals(0, result.startIndex)
+        }
+
+    @Test
+    fun `onSetMediaItems with search query from in-app controller is resolved too`() =
+        runTest {
+            shuffleStateHolder.setShuffleEnabled(false)
+            coEvery { songRepo.search("") } returns listOf(song(1), song(2), song(3))
+            val inApp =
+                mockk<MediaSession.ControllerInfo>(relaxed = true) {
+                    every { packageName } returns "com.wolf.musicplayer"
+                }
+
+            val future = callback.onSetMediaItems(mockMediaSession, inApp, listOf(searchItem("")), -1, 0L)
+            testScope.advanceUntilIdle()
+
+            assertEquals(3, future.get().mediaItems.size)
+        }
+
+    @Test
+    fun `onSetMediaItems with search query and no match returns empty queue`() =
+        runTest {
+            coEvery { songRepo.search(any()) } returns emptyList()
+
+            val future = callback.onSetMediaItems(mockMediaSession, mockController, listOf(searchItem("nothing")), -1, 0L)
+            testScope.advanceUntilIdle()
+
+            assertTrue(future.get().mediaItems.isEmpty())
+        }
 }
