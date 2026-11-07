@@ -19,7 +19,8 @@ class PlaybackSessionRepository
             songId: Long,
             positionMs: Long = 0L,
         ) {
-            prefs.edit()
+            prefs
+                .edit()
                 .putString("context_type", queueContext.toTypeString())
                 .putString("context_id", queueContext.toIdString())
                 .putLong("last_song_id", songId)
@@ -36,10 +37,14 @@ class PlaybackSessionRepository
             val ctx =
                 when (type) {
                     "ALL" -> QueueContext.AllSongs
+
                     "PLAYLIST" -> QueueContext.PlaylistCtx(id.toLongOrNull() ?: return null)
+
                     // Names are used as keys and may not survive a media rescan/tag edit — fallback handled by caller
                     "ALBUM" -> QueueContext.AlbumCtx(id)
+
                     "ARTIST" -> QueueContext.ArtistCtx(id)
+
                     else -> return null
                 }
             return Triple(ctx, songId, positionMs)

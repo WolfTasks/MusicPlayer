@@ -37,23 +37,23 @@ class LibraryViewModel
     constructor(
         private val songRepository: SongRepository,
     ) : ViewModel() {
-        private val _query = MutableStateFlow("")
-        private val _isLoading = MutableStateFlow(false)
+        private val queryFlow = MutableStateFlow("")
+        private val loadingFlow = MutableStateFlow(false)
 
         val state =
-            combine(songRepository.observeAll(), _query, _isLoading) { songs, query, loading ->
+            combine(songRepository.observeAll(), queryFlow, loadingFlow) { songs, query, loading ->
                 LibraryState(songs = songs, query = query, isLoading = loading)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryState())
 
         fun setQuery(query: String) {
-            _query.update { query }
+            queryFlow.update { query }
         }
 
         fun syncLocalMusic() {
             viewModelScope.launch {
-                _isLoading.update { true }
+                loadingFlow.update { true }
                 songRepository.syncLocalMusic()
-                _isLoading.update { false }
+                loadingFlow.update { false }
             }
         }
     }

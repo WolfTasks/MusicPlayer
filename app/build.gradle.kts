@@ -53,8 +53,8 @@ kotlin {
 }
 
 ktlint {
-    // Pinned to the engine used before the plugin upgrade (12.1.1 -> 14.x) so this PR does not
-    // reformat the codebase. Bump separately together with a `ktlintFormat` run.
+    // Engine pinned explicitly so plugin bumps never silently reformat the codebase.
+    // Bump this together with a `ktlintFormat` run (as a separate formatting commit).
     version.set(libs.versions.ktlintEngine.get())
 }
 
@@ -78,7 +78,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)

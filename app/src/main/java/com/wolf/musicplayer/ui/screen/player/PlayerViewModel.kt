@@ -66,7 +66,8 @@ class PlayerViewModel
         val state: StateFlow<PlayerState> = _state.asStateFlow()
 
         val playlists =
-            playlistRepo.observeAll()
+            playlistRepo
+                .observeAll()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -80,8 +81,7 @@ class PlayerViewModel
                     } else {
                         flowOf(emptySet())
                     }
-                }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
         private val _addToPlaylistSong = MutableStateFlow<Song?>(null)
         val addToPlaylistSong: StateFlow<Song?> = _addToPlaylistSong.asStateFlow()
@@ -97,8 +97,7 @@ class PlayerViewModel
                     } else {
                         flowOf(emptySet())
                     }
-                }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
         fun setAddToPlaylistSong(song: Song?) {
             _addToPlaylistSong.value = song
@@ -298,7 +297,8 @@ class PlayerViewModel
                     }
                 val items =
                     activeQueue.map { song ->
-                        MediaItem.Builder()
+                        MediaItem
+                            .Builder()
                             .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()
@@ -359,7 +359,8 @@ class PlayerViewModel
                 val newIndex = activeQueue.indexOfFirst { it.id == songId }.coerceAtLeast(0)
                 val items =
                     activeQueue.map { song ->
-                        MediaItem.Builder()
+                        MediaItem
+                            .Builder()
                             .setMediaId("song:${song.id}")
                             .setUri(song.localPath ?: song.cachedPath ?: "")
                             .build()

@@ -21,12 +21,14 @@ class PlaylistDetailViewModel
         private val playlistId: Long = checkNotNull(savedStateHandle["playlistId"])
 
         val playlist =
-            repo.observeAll()
+            repo
+                .observeAll()
                 .map { lists -> lists.find { it.id == playlistId } }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
         val songs =
-            repo.observeSongsForPlaylist(playlistId)
+            repo
+                .observeSongsForPlaylist(playlistId)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         fun removeSong(songId: Long) {

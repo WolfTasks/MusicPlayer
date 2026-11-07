@@ -19,15 +19,16 @@ object PlayerModule {
     fun provideExoPlayer(
         @ApplicationContext context: Context,
     ): ExoPlayer =
-        ExoPlayer.Builder(context)
+        ExoPlayer
+            .Builder(context)
             .setAudioAttributes(
-                AudioAttributes.Builder()
+                AudioAttributes
+                    .Builder()
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .build(),
                 // handleAudioFocus
                 true,
-            )
-            .setHandleAudioBecomingNoisy(true)
+            ).setHandleAudioBecomingNoisy(true)
             .build()
 }

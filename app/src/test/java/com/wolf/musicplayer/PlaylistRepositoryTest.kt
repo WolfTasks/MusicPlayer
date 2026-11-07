@@ -32,9 +32,16 @@ class PlaylistRepositoryTest {
         runTest {
             val entity =
                 SongEntity(
-                    id = 7L, title = "Test", artist = "A", album = "B",
-                    duration = 1000L, sourceType = "LOCAL",
-                    serverId = null, serverSongId = null, localPath = "/p", cachedPath = null,
+                    id = 7L,
+                    title = "Test",
+                    artist = "A",
+                    album = "B",
+                    duration = 1000L,
+                    sourceType = "LOCAL",
+                    serverId = null,
+                    serverSongId = null,
+                    localPath = "/p",
+                    cachedPath = null,
                 )
             coEvery { dao.getSongsForPlaylist(10L) } returns listOf(entity)
 
