@@ -250,6 +250,16 @@ class AutoLibraryCallback
             startIndex: Int,
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            // Voice search ("play X" via Assistant / Android Auto, or MainActivity's
+            // MEDIA_PLAY_FROM_SEARCH handler): a single item carrying only a search query.
+            val searchQuery =
+                mediaItems.singleOrNull()
+                    ?.takeIf { it.localConfiguration == null }
+                    ?.requestMetadata
+                    ?.searchQuery
+            if (searchQuery != null) {
+                return resolveSearch(searchQuery.toString())
+            }
             // In-app controller (PlayerViewModel): queue already built; pass through unchanged.
             if (callerValidator.isOwnApp(controller)) {
                 return Futures.immediateFuture(
@@ -280,6 +290,28 @@ class AutoLibraryCallback
                     val idx = queue.indexOfFirst { it.id == requestedSongId }.coerceAtLeast(0)
                     val resolvedItems = queue.map { it.toMediaItem("song:${it.id}") }
                     future.set(MediaSession.MediaItemsWithStartPosition(resolvedItems, idx, startPositionMs))
+                } catch (e: Exception) {
+                    future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
+                }
+            }
+            return future
+        }
+
+        @OptIn(UnstableApi::class)
+        private fun resolveSearch(query: String): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+            callbackScope.launch {
+                try {
+                    val songs = songRepository.search(query)
+                    val queue =
+                        if (shuffleStateHolder.shuffleEnabled) {
+                            val weights = songs.map { playWeightRepository.getWeight(it.id) }
+                            shuffler.permute(songs, weights)
+                        } else {
+                            songs
+                        }
+                    val items = queue.map { it.toMediaItem("song:${it.id}") }
+                    future.set(MediaSession.MediaItemsWithStartPosition(items, 0, 0L))
                 } catch (e: Exception) {
                     future.set(MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L))
                 }

@@ -45,6 +45,12 @@ class SongRepository
 
         suspend fun getArtists(): List<String> = dao.getArtists()
 
+        /** Free-text search over title, artist and album; a blank query returns the whole library. */
+        suspend fun search(query: String): List<Song> {
+            val trimmed = query.trim()
+            return if (trimmed.isEmpty()) getAll() else dao.search(trimmed).map(SongEntity::toDomain)
+        }
+
         suspend fun getByIds(ids: List<Long>): List<Song> = dao.getByIds(ids).map(SongEntity::toDomain)
     }
 

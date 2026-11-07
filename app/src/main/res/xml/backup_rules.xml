@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Sample backup rules file; uncomment and customize as necessary.
+   Auto Backup rules for Android 11 (API 30) and lower.
    See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+
+   The Room database and SharedPreferences are excluded:
+   - songs/playlists reference device-specific MediaStore IDs and file paths, so a
+     restore onto another device would produce broken entries (the library is rebuilt
+     from MediaStore on first start anyway),
+   - server passwords are encrypted with an Android Keystore key, which is never
+     backed up, so restored ciphertext could not be decrypted,
+   - playback session / play weights are device-local state.
+   Keep in sync with data_extraction_rules.xml (API 31+).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
 </full-backup-content>

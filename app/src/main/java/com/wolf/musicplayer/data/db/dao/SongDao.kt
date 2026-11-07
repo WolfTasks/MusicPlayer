@@ -48,6 +48,13 @@ interface SongDao {
     @Query("SELECT DISTINCT album FROM songs ORDER BY album ASC")
     suspend fun getAlbums(): List<String>
 
+    @Query(
+        "SELECT * FROM songs WHERE title LIKE '%' || :query || '%' " +
+            "OR artist LIKE '%' || :query || '%' OR album LIKE '%' || :query || '%' " +
+            "ORDER BY artist, album, title",
+    )
+    suspend fun search(query: String): List<SongEntity>
+
     @Query("SELECT * FROM songs WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<SongEntity>
 
