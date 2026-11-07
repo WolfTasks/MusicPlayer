@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,18 +77,15 @@ fun PlaylistDetailScreen(
                 songs,
                 key = { _, song -> song.id },
             ) { index, song ->
-                val dismissState =
-                    rememberSwipeToDismissBoxState(
-                        confirmValueChange = { it == SwipeToDismissBoxValue.EndToStart },
-                    )
-                LaunchedEffect(dismissState.currentValue) {
-                    if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                        viewModel.removeSong(song.id)
-                    }
-                }
+                val dismissState = rememberSwipeToDismissBoxState()
                 SwipeToDismissBox(
                     state = dismissState,
                     enableDismissFromStartToEnd = false,
+                    onDismiss = { direction ->
+                        if (direction == SwipeToDismissBoxValue.EndToStart) {
+                            viewModel.removeSong(song.id)
+                        }
+                    },
                     backgroundContent = {
                         Box(
                             modifier =
