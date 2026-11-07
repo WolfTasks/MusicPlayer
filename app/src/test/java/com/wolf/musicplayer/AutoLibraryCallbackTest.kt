@@ -779,6 +779,27 @@ class AutoLibraryCallbackTest {
         assertFalse(callback.onConnect(mockSession, impostor).isAccepted)
     }
 
+    @Test
+    fun `onConnect rejects a known host package whose certificates cannot be read`() {
+        val auto = controller(GEARHEAD, 10_801)
+        every { packageInspector.uidOwnsPackage(10_801, GEARHEAD) } returns true
+        every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns emptySet()
+        every { packageInspector.platformCertificatesSha256() } returns emptySet()
+
+        assertFalse(callback.onConnect(mockSession, auto).isAccepted)
+    }
+
+    @Test
+    fun `onAddMediaItems from external controller returns empty list when repository throws`() =
+        runTest {
+            coEvery { songRepo.getById(any()) } throws RuntimeException("DB failure")
+
+            val future = callback.onAddMediaItems(mockMediaSession, mockController, listOf(mediaItemWithId("song:1")))
+            testScope.advanceUntilIdle()
+
+            assertTrue(future.get().isEmpty())
+        }
+
     private companion object {
         const val GEARHEAD = "com.google.android.projection.gearhead"
         const val GEARHEAD_RELEASE_CERT = "fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf"
