@@ -14,6 +14,7 @@ buildscript {
             "org.jdom:jdom2" to "2.0.6.1",
             "org.bitbucket.b_c:jose4j" to "0.9.6",
             "com.google.guava:guava" to "33.7.2",
+            "org.apache.commons:commons-lang3" to "3.18.0",
         )
 
     fun parts(v: String) = v.substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
