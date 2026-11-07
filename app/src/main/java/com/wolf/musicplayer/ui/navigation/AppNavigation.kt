@@ -2,11 +2,11 @@ package com.wolf.musicplayer.ui.navigation
 
 import android.net.Uri
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,7 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -45,7 +45,7 @@ sealed class Screen(
 ) {
     object Library : Screen("library", "Bibliothek", Icons.Default.LibraryMusic)
 
-    object Playlists : Screen("playlists", "Playlists", Icons.Default.QueueMusic)
+    object Playlists : Screen("playlists", "Playlists", Icons.AutoMirrored.Filled.QueueMusic)
 
     object Artists : Screen("artists", "Künstler", Icons.Default.Person)
 

@@ -282,7 +282,7 @@ class AutoLibraryCallback
                     ?.requestMetadata
                     ?.searchQuery
             if (searchQuery != null) {
-                return resolveSearch(searchQuery.toString())
+                return resolveSearch(searchQuery)
             }
             // In-app controller (PlayerViewModel): queue already built; pass through unchanged.
             if (callerValidator.isOwnApp(controller)) {
