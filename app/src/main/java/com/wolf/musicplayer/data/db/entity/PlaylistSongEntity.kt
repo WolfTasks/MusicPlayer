@@ -2,6 +2,7 @@ package com.wolf.musicplayer.data.db.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 
 @Entity(
     tableName = "playlist_songs",
@@ -20,6 +21,9 @@ import androidx.room.ForeignKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
+    // playlistId is covered by the composite primary key; songId needs its own index so that
+    // the CASCADE on song deletion does not scan the whole table.
+    indices = [Index("songId")],
 )
 data class PlaylistSongEntity(
     val playlistId: Long,

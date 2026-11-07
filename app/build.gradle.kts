@@ -34,8 +34,18 @@ android {
         compose = true
     }
 
+    sourceSets {
+        // Exported Room schemas feed MigrationTestHelper. Robolectric unit tests only see the
+        // tested variant's merged assets (the `test` source set has none), hence `debug`;
+        // release builds stay free of the schema files.
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        getByName("debug").assets.directories.add("$projectDir/schemas")
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Robolectric needs merged resources/assets: Room schemas and the Compose test activity manifest.
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             // Robolectric (SDK 36 android-all) reflects into FileDescriptor internals via SharedSecrets.
             it.jvmArgs(
@@ -88,11 +98,15 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.robolectric)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.room.testing)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.junit.ext)
 }
