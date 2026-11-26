@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -95,9 +96,15 @@ fun PlayerScreen(
                 0f
             }
 
+        // Created once and fed the current value on every recomposition, exactly like the
+        // deprecated value-based Slider overload did; rememberSliderState(value) would only
+        // capture the initial value and freeze the seekbar.
+        val sliderState = remember { SliderState() }
+        sliderState.value = sliderValue
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Slider(
-                value = sliderValue,
+                state = sliderState,
                 onValueChange = { v ->
                     isDragging = true
                     dragValue = v

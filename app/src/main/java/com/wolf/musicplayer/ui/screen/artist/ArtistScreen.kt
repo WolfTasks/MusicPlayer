@@ -41,12 +41,13 @@ fun ArtistScreen(
         ) {
             items(artists, key = { it }) { artist ->
                 ListItem(
-                    headlineContent = { Text(artist) },
                     modifier =
                         Modifier
                             .padding(horizontal = 8.dp)
                             .clickable { onItemClick(artist) },
-                )
+                ) {
+                    Text(artist)
+                }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
         }

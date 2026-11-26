@@ -41,12 +41,13 @@ fun AlbumScreen(
         ) {
             items(albums, key = { it }) { album ->
                 ListItem(
-                    headlineContent = { Text(album) },
                     modifier =
                         Modifier
                             .padding(horizontal = 8.dp)
                             .clickable { onItemClick(album) },
-                )
+                ) {
+                    Text(album)
+                }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
         }

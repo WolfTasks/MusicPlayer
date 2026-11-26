@@ -8,7 +8,9 @@ plugins {
 
 android {
     namespace = "com.wolf.musicplayer"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         applicationId = "com.wolf.musicplayer"

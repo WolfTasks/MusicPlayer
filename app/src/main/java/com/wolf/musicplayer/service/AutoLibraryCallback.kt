@@ -8,6 +8,7 @@ import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -59,14 +60,15 @@ class AutoLibraryCallback
          * System UI / trusted system controllers and signature-verified Android Auto/Automotive
          * hosts are accepted; everyone else is rejected before it can browse the library.
          */
-        override fun onConnect(
+        @OptIn(UnstableApi::class)
+        override fun onConnectAsync(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
-        ): MediaSession.ConnectionResult =
+        ): ListenableFuture<MediaSession.ConnectionResult> =
             if (callerValidator.isAllowed(session, controller)) {
-                super.onConnect(session, controller)
+                super.onConnectAsync(session, controller)
             } else {
-                MediaSession.ConnectionResult.reject()
+                Futures.immediateFuture(MediaSession.ConnectionResult.reject())
             }
 
         /**
@@ -173,7 +175,7 @@ class AutoLibraryCallback
                         }
                     future.set(LibraryResult.ofItemList(items, null))
                 } catch (e: Exception) {
-                    future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_UNKNOWN))
+                    future.set(LibraryResult.ofError(SessionError.ERROR_UNKNOWN))
                 }
             }
             return future
@@ -192,10 +194,10 @@ class AutoLibraryCallback
                     if (song != null) {
                         future.set(LibraryResult.ofItem(song.toMediaItem(mediaId), null))
                     } else {
-                        future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE))
+                        future.set(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
                     }
                 } catch (e: Exception) {
-                    future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_UNKNOWN))
+                    future.set(LibraryResult.ofError(SessionError.ERROR_UNKNOWN))
                 }
             }
             return future
@@ -222,6 +224,7 @@ class AutoLibraryCallback
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
+            isForPlayback: Boolean,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             callbackScope.launch {
