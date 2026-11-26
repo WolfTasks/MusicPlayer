@@ -13,8 +13,8 @@ All commands run via Gradle wrapper from the project root:
 # Run unit tests
 ./gradlew test
 
-# Run a single test class
-./gradlew test --tests "com.wolf.musicplayer.WeightedShufflerTest"
+# Run a single test class (the aggregate `test` task does not accept --tests)
+./gradlew testDebugUnitTest --tests "com.wolf.musicplayer.WeightedShufflerTest"
 
 # Run instrumented tests (requires device/emulator)
 ./gradlew connectedAndroidTest

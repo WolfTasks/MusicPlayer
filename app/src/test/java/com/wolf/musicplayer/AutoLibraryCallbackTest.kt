@@ -21,6 +21,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -31,6 +32,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AutoLibraryCallbackTest {
     private lateinit var songRepo: SongRepository
     private lateinit var playlistRepo: PlaylistRepository
@@ -494,7 +496,7 @@ class AutoLibraryCallbackTest {
         runTest {
             coEvery { songRepo.getAll() } returns listOf(song(1), song(2), song(3))
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -513,7 +515,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getAll() } returns songs
             coEvery { playWeightRepo.getWeight(any()) } returns 1.0f
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -526,7 +528,7 @@ class AutoLibraryCallbackTest {
         runTest {
             coEvery { songRepo.getAll() } throws RuntimeException("DB failure")
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -543,7 +545,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getAll() } returns songs
             every { playbackSessionRepo.load() } returns Triple(QueueContext.AllSongs, 2L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -560,7 +562,7 @@ class AutoLibraryCallbackTest {
             coEvery { playlistRepo.getSongsForPlaylist(3L) } returns songs
             every { playbackSessionRepo.load() } returns Triple(QueueContext.PlaylistCtx(3L), 11L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -577,7 +579,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getByAlbum("Abbey Road") } returns songs
             every { playbackSessionRepo.load() } returns Triple(QueueContext.AlbumCtx("Abbey Road"), 22L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -593,7 +595,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getByArtist("The Beatles") } returns songs
             every { playbackSessionRepo.load() } returns Triple(QueueContext.ArtistCtx("The Beatles"), 31L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -608,7 +610,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getByAlbum("Abbey Road") } returns listOf(song(20), song(21))
             every { playbackSessionRepo.load() } returns Triple(QueueContext.AlbumCtx("Abbey Road"), 999L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -623,7 +625,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getAll() } returns listOf(song(1), song(2))
             every { playbackSessionRepo.load() } returns Triple(QueueContext.PlaylistCtx(99L), 1L, 0L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -638,7 +640,7 @@ class AutoLibraryCallbackTest {
             coEvery { songRepo.getAll() } returns songs
             every { playbackSessionRepo.load() } returns Triple(QueueContext.AllSongs, 2L, 45_000L)
 
-            val future = callback.onPlaybackResumption(mockMediaSession, mockController)
+            val future = callback.onPlaybackResumption(mockMediaSession, mockController, true)
             testScope.advanceUntilIdle()
             val result = future.get()
 
@@ -726,7 +728,7 @@ class AutoLibraryCallbackTest {
         every { packageInspector.uidOwnsPackage(10_500, "com.evil.app") } returns true
         every { packageInspector.signingCertificatesSha256("com.evil.app") } returns setOf("abc123")
 
-        assertFalse(callback.onConnect(mockSession, evil).isAccepted)
+        assertFalse(callback.onConnectAsync(mockSession, evil).get().isAccepted)
     }
 
     @Test
@@ -735,7 +737,7 @@ class AutoLibraryCallbackTest {
         every { packageInspector.uidOwnsPackage(10_600, GEARHEAD) } returns true
         every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf("deadbeef")
 
-        assertFalse(callback.onConnect(mockSession, fakeAuto).isAccepted)
+        assertFalse(callback.onConnectAsync(mockSession, fakeAuto).get().isAccepted)
     }
 
     @Test
@@ -744,7 +746,7 @@ class AutoLibraryCallbackTest {
         every { packageInspector.uidOwnsPackage(10_700, GEARHEAD) } returns false
         every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf(GEARHEAD_RELEASE_CERT)
 
-        assertFalse(callback.onConnect(mockSession, spoofed).isAccepted)
+        assertFalse(callback.onConnectAsync(mockSession, spoofed).get().isAccepted)
     }
 
     @Test
@@ -753,7 +755,7 @@ class AutoLibraryCallbackTest {
         every { packageInspector.uidOwnsPackage(10_800, GEARHEAD) } returns true
         every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns setOf(GEARHEAD_RELEASE_CERT)
 
-        assertTrue(callback.onConnect(mockSession, auto).isAccepted)
+        assertTrue(callback.onConnectAsync(mockSession, auto).get().isAccepted)
     }
 
     @Test
@@ -763,26 +765,26 @@ class AutoLibraryCallbackTest {
         every { packageInspector.signingCertificatesSha256("com.android.car.media") } returns setOf("platformkey")
         every { packageInspector.platformCertificatesSha256() } returns setOf("platformkey")
 
-        assertTrue(callback.onConnect(mockSession, carMedia).isAccepted)
+        assertTrue(callback.onConnectAsync(mockSession, carMedia).get().isAccepted)
     }
 
     @Test
     fun `onConnect accepts a trusted controller such as System UI`() {
         val systemUi = controller("com.android.systemui", 10_050, trusted = true)
 
-        assertTrue(callback.onConnect(mockSession, systemUi).isAccepted)
+        assertTrue(callback.onConnectAsync(mockSession, systemUi).get().isAccepted)
     }
 
     @Test
     fun `onConnect accepts the system process`() {
-        assertTrue(callback.onConnect(mockSession, controller("android", 1000)).isAccepted)
+        assertTrue(callback.onConnectAsync(mockSession, controller("android", 1000)).get().isAccepted)
     }
 
     @Test
     fun `onConnect accepts our own app`() {
         val own = controller("com.wolf.musicplayer", ownUid)
 
-        assertTrue(callback.onConnect(mockSession, own).isAccepted)
+        assertTrue(callback.onConnectAsync(mockSession, own).get().isAccepted)
     }
 
     @Test
@@ -790,7 +792,7 @@ class AutoLibraryCallbackTest {
         val impostor = controller("com.wolf.musicplayer", 10_999)
         every { packageInspector.uidOwnsPackage(10_999, "com.wolf.musicplayer") } returns false
 
-        assertFalse(callback.onConnect(mockSession, impostor).isAccepted)
+        assertFalse(callback.onConnectAsync(mockSession, impostor).get().isAccepted)
     }
 
     @Test
@@ -800,7 +802,7 @@ class AutoLibraryCallbackTest {
         every { packageInspector.signingCertificatesSha256(GEARHEAD) } returns emptySet()
         every { packageInspector.platformCertificatesSha256() } returns emptySet()
 
-        assertFalse(callback.onConnect(mockSession, auto).isAccepted)
+        assertFalse(callback.onConnectAsync(mockSession, auto).get().isAccepted)
     }
 
     @Test

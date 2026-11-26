@@ -146,7 +146,6 @@ fun PlaylistScreen(
                 Box {
                     ListItem(
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        headlineContent = { Text(playlist.name) },
                         trailingContent = {
                             IconButton(onClick = {
                                 viewModel.playPlaylist(playlist.id, onPlaySongs)
@@ -162,7 +161,9 @@ fun PlaylistScreen(
                                     onClick = { onPlaylistClick(playlist.id) },
                                     onLongClick = { menuTarget = playlist },
                                 ),
-                    )
+                    ) {
+                        Text(playlist.name)
+                    }
                     DropdownMenu(
                         expanded = menuTarget?.id == playlist.id,
                         onDismissRequest = { menuTarget = null },
